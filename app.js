@@ -27,14 +27,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   const quizTitle = document.getElementById('quiz_title');
   const btnPlayQuiz = document.getElementById('btn_play_quiz');
   const btnLogout = document.getElementById('btn_logout');
-  const dbModeBadge = document.getElementById('db_mode_badge');
 
-  // Badge kết nối Supabase
-  if (dbModeBadge) {
-    dbModeBadge.innerHTML = `<span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800">
-      ● Kết nối Supabase Realtime
-    </span>`;
-  }
 
   // Làm mới dữ liệu user từ DB
   try {
