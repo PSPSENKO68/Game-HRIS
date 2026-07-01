@@ -1,0 +1,120 @@
+@import "tailwindcss";
+
+:root {
+  /* Brand Colors */
+  --brand-orange:       #E07242;   /* Cam đậm — primary */
+  --brand-orange-light: #E5853F;   /* Cam nhạt — secondary */
+  --brand-green:        #677B40;   /* Xanh lá đậm — success/accent */
+  --brand-skin:         #E9C691;   /* Da người — warm accent */
+  --brand-gray-light:   #DCDCDC;   /* Ghi sáng */
+  --brand-mint:         #C9E6E1;   /* Mint xanh */
+  --brand-dark:         #2C2C2C;   /* Nền tối */
+  --brand-bg:           #F9F5F0;   /* Nền kem */
+
+  /* Kahoot game button colors (giữ nguyên cho quiz) */
+  --kahoot-red:    #e21b3c;
+  --kahoot-blue:   #1368ce;
+  --kahoot-yellow: #d89e00;
+  --kahoot-green:  #26890c;
+}
+
+
+@layer utilities {
+  .bg-kahoot-red { background-color: var(--kahoot-red); }
+  .bg-kahoot-blue { background-color: var(--kahoot-blue); }
+  .bg-kahoot-yellow { background-color: var(--kahoot-yellow); }
+  .bg-kahoot-green { background-color: var(--kahoot-green); }
+  .bg-kahoot-purple { background-color: var(--kahoot-purple); }
+  .bg-kahoot-dark { background-color: var(--kahoot-dark); }
+  
+  .text-kahoot-red { color: var(--kahoot-red); }
+  .text-kahoot-blue { color: var(--kahoot-blue); }
+  .text-kahoot-yellow { color: var(--kahoot-yellow); }
+  .text-kahoot-green { color: var(--kahoot-green); }
+  .text-kahoot-purple { color: var(--kahoot-purple); }
+}
+
+body {
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  background-color: #f3f4f6;
+  color: #1f2937;
+  overflow-x: hidden;
+}
+
+/* Custom Pulsing Animations for correct answer or next questions */
+@keyframes correctPulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+  100% { transform: scale(1); }
+}
+
+.animate-correct {
+  animation: correctPulse 0.5s ease-in-out infinite;
+}
+
+/* Shake animation for wrong answer or failure */
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-6px); }
+  75% { transform: translateX(6px); }
+}
+
+.animate-shake {
+  animation: shake 0.25s ease-in-out;
+}
+
+/* Progress bar transitions */
+.progress-bar-fill {
+  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Floating shape accents in login or hub */
+@keyframes float {
+  0% { transform: translateY(0px) rotate(0deg); }
+  50% { transform: translateY(-10px) rotate(5deg); }
+  100% { transform: translateY(0px) rotate(0deg); }
+}
+
+.animate-float {
+  animation: float 4s ease-in-out infinite;
+}
+
+@keyframes float-delay {
+  0% { transform: translateY(0px) rotate(0deg); }
+  50% { transform: translateY(-15px) rotate(-10deg); }
+  100% { transform: translateY(0px) rotate(0deg); }
+}
+
+.animate-float-delay {
+  animation: float-delay 6s ease-in-out infinite;
+  animation-delay: 2s;
+}
+
+/* Kahoot Shape icon helpers */
+.kahoot-triangle {
+  width: 0;
+  height: 0;
+  border-left: 12px solid transparent;
+  border-right: 12px solid transparent;
+  border-bottom: 20px solid white;
+}
+
+.kahoot-diamond {
+  width: 16px;
+  height: 16px;
+  background: white;
+  transform: rotate(45deg);
+}
+
+.kahoot-circle {
+  width: 18px;
+  height: 18px;
+  background: white;
+  border-radius: 50%;
+}
+
+.kahoot-square {
+  width: 18px;
+  height: 18px;
+  background: white;
+}

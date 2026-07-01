@@ -1,0 +1,225 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Cổng Trò Chơi Quiz Doanh Nghiệp</title>
+    <meta name="description" content="Hệ thống Quiz nội bộ nâng cao kiến thức và cạnh tranh lành mạnh" />
+    <link rel="stylesheet" href="/style.css" />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@500;700&display=swap" />
+    <style>
+      body { background: #F9F5F0; }
+      .brand-strip { background: linear-gradient(90deg, #E07242, #E5853F, #677B40, #E9C691); }
+      
+      .brand-card {
+        background: linear-gradient(145deg, #2C2C2C 0%, #1a1a1a 100%);
+        border: 1px solid rgba(224, 114, 66, 0.15);
+      }
+      
+      .brand-card-light {
+        background: #ffffff;
+        border: 1px solid rgba(224, 114, 66, 0.2);
+        box-shadow: 0 4px 15px rgba(0,0,0,0.03);
+      }
+
+      .logo-ring {
+        background: linear-gradient(135deg, #E07242, #677B40);
+        box-shadow: 0 8px 32px rgba(224,114,66,0.25);
+      }
+
+      .btn-play {
+        background: linear-gradient(135deg, #E07242 0%, #E5853F 100%);
+        color: #fff;
+        font-weight: 900;
+        border-radius: 14px;
+        padding: 14px 24px;
+        transition: opacity 0.15s, transform 0.1s;
+        box-shadow: 0 4px 20px rgba(224,114,66,0.35);
+        border: none;
+      }
+      .btn-play:hover { opacity: 0.92; }
+      .btn-play:active { transform: scale(0.97); }
+      .btn-play:disabled { background: #d1d5db; color: #6b7280; box-shadow: none; transform: none; opacity: 1; cursor: not-allowed; }
+
+      .btn-outline {
+        background: rgba(255,255,255,0.05);
+        border: 1.5px solid rgba(255,255,255,0.1);
+        color: #fff;
+        border-radius: 12px;
+        transition: background 0.15s;
+      }
+      .btn-outline:hover { background: rgba(255,255,255,0.1); }
+
+      .nav-btn {
+        background: linear-gradient(145deg, #2C2C2C, #222);
+        border: 1px solid rgba(255,255,255,0.05);
+        transition: transform 0.1s, box-shadow 0.2s;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      }
+      .nav-btn:hover { box-shadow: 0 6px 16px rgba(224,114,66,0.15); border-color: rgba(224,114,66,0.2); }
+      .nav-btn:active { transform: scale(0.97); }
+
+      .icon-box { background: rgba(224, 114, 66, 0.1); color: #E07242; }
+
+      /* Modals */
+      .modal-overlay { background: rgba(44,44,44,0.6); backdrop-filter: blur(4px); }
+      .brand-input {
+        background: #f5f0eb;
+        border: 1.5px solid #e8e0d6;
+        color: #2C2C2C;
+        border-radius: 12px;
+        padding: 10px 14px;
+        width: 100%;
+        font-size: 0.875rem;
+        transition: border-color 0.15s, background 0.15s;
+        outline: none;
+      }
+      .brand-input:focus { border-color: #E07242; background: #fff; box-shadow: 0 0 0 3px rgba(224,114,66,0.1); }
+
+      @keyframes fadeSlideUp {
+        from { opacity: 0; transform: translateY(15px); }
+        to   { opacity: 1; transform: translateY(0); }
+      }
+      .animate-in { animation: fadeSlideUp 0.4s ease forwards; }
+    </style>
+  </head>
+  <body class="min-h-screen flex flex-col justify-between">
+    
+    <!-- Top Strip -->
+    <div class="h-1.5 w-full brand-strip"></div>
+
+    <main class="w-full max-w-md mx-auto px-4 py-8 flex-1 flex flex-col justify-center">
+      <!-- App Header and Logo -->
+      <div class="text-center mb-7 animate-in">
+        <div class="inline-flex items-center justify-center w-16 h-16 rounded-2xl logo-ring text-white mb-3">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-8 h-8 text-[#E9C691]">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904L9 21l8.904-4.43c2.148-.273 3.963-1.637 4.577-3.693l.259-.867A10.518 10.518 0 0013.15 3a10.518 10.518 0 00-3.337 12.904z" />
+            <path stroke-linecap="round" stroke-linejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 11.026 1.39l-.041.02a.75.75 0 01-.026-1.39z" />
+          </svg>
+        </div>
+        <h1 class="font-['Space_Grotesk'] text-[26px] font-black tracking-tight text-[#2C2C2C] uppercase leading-tight">QUIZ CORPORATE</h1>
+        <p class="text-[#877A6E] text-xs font-bold uppercase tracking-widest mt-1">Hệ thống Đấu trí nội bộ Doanh nghiệp</p>
+      </div>
+
+      <!-- Welcome Profile Card -->
+      <div id="user_profile_card" class="brand-card rounded-3xl p-6 mb-5 text-white hidden shadow-xl animate-in" style="animation-delay: 0.05s">
+        <div class="flex items-center justify-between mb-4">
+          <div class="flex items-center space-x-3 flex-1">
+            <div class="w-12 h-12 rounded-xl bg-white/10 border border-white/5 flex items-center justify-center text-[#E9C691] font-black text-xl font-['Space_Grotesk']" id="user_avatar_char">U</div>
+            <div class="flex-1">
+              <div class="font-bold text-white text-[15px] leading-tight" id="user_full_name">Đang tải...</div>
+              <div class="text-[10px] text-white/60 mt-1"><span id="user_department">Phòng ban</span> • SĐT: <span id="user_employee_code" class="font-mono">--</span></div>
+            </div>
+          </div>
+          <!-- Edit profile button -->
+          <button id="btn_edit_profile" class="w-9 h-9 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center hover:bg-white/15 transition cursor-pointer" title="Cập nhật thông tin">
+            <svg class="w-4 h-4 text-[#E9C691]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+            </svg>
+          </button>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3 pt-4 border-t border-white/5">
+          <div class="bg-white/5 border border-white/5 rounded-xl p-3 text-center">
+            <p class="text-[9px] uppercase font-bold text-white/50 tracking-wider">Tổng điểm tích lũy</p>
+            <p class="text-xl font-black text-[#E9C691] mt-1 font-['Space_Grotesk']" id="user_total_score">0</p>
+          </div>
+          <div class="bg-white/5 border border-white/5 rounded-xl p-3 text-center">
+            <p class="text-[9px] uppercase font-bold text-white/50 tracking-wider">Lượt chơi hôm nay</p>
+            <p class="text-xl font-black text-[#E07242] mt-1 font-['Space_Grotesk']" id="user_plays_today">0/3</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Active Quiz Card -->
+      <div id="active_quiz_panel" class="brand-card-light rounded-3xl p-6 mb-5 text-center hidden animate-in" style="animation-delay: 0.1s">
+        <span class="inline-flex px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-wider bg-orange-50 text-[#E07242] border border-orange-100 mb-3" id="quiz_week_badge">QUIZ TUẦN NÀY</span>
+        <h2 class="text-xl font-black font-['Space_Grotesk'] text-[#2C2C2C] mb-2" id="quiz_title">Đang kiểm tra đề thi...</h2>
+        <p class="text-[#877A6E] text-[11px] mb-5">Mỗi câu đúng cộng 10 điểm, trả lời nhanh nhận thêm thưởng!</p>
+        
+        <button id="btn_play_quiz" class="btn-play w-full flex items-center justify-center gap-2 text-sm uppercase tracking-wider cursor-pointer">
+          BẮT ĐẦU CHƠI NGAY
+          <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M5.25 5.653c0-.856.917-1.398 1.667-.986l11.54 6.348a1.125 1.125 0 010 1.971l-11.54 6.347a1.125 1.125 0 01-1.667-.985V5.653z" />
+          </svg>
+        </button>
+      </div>
+
+      <!-- Navigation Cards -->
+      <div class="space-y-3 animate-in" style="animation-delay: 0.15s">
+        <!-- Leaderboard -->
+        <a href="/leaderboard.html" class="nav-btn rounded-2xl p-4 flex items-center justify-between group block cursor-pointer">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl icon-box flex items-center justify-center font-bold text-lg">🏆</div>
+            <div class="text-left">
+              <h3 class="font-bold text-white text-sm">Bảng Xếp Hạng Top 20</h3>
+              <p class="text-[10px] text-white/50">Cập nhật vinh danh các cao thủ</p>
+            </div>
+          </div>
+          <svg class="w-4 h-4 text-white/30 group-hover:text-[#E07242] transition" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
+          </svg>
+        </a>
+
+        <!-- Admin Dashboard -->
+        <a href="/admin.html" class="nav-btn rounded-2xl p-4 flex items-center justify-between group hidden cursor-pointer">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-white/5 text-white/70 border border-white/10 flex items-center justify-center font-bold text-lg">⚙️</div>
+            <div class="text-left">
+              <h3 class="font-bold text-white text-sm">Bảng Điều Khiển Admin</h3>
+              <p class="text-[10px] text-white/50">Quản trị người dùng & Kho câu hỏi</p>
+            </div>
+          </div>
+          <svg class="w-4 h-4 text-white/30 group-hover:text-white transition" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
+          </svg>
+        </a>
+      </div>
+
+      <!-- Logout segment -->
+      <div class="mt-8 text-center animate-in" style="animation-delay: 0.2s">
+        <button id="btn_logout" class="text-[11px] font-bold text-[#E07242] uppercase tracking-widest hover:text-[#E5853F] transition bg-[#F9F5F0] cursor-pointer inline-flex items-center gap-1.5 px-4 py-2 rounded-full border border-orange-200">
+          <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M12 9l-3 3m0 0l3 3m-3-3h12.75" />
+          </svg>
+          Đăng xuất tài khoản
+        </button>
+        <div class="mt-3 flex justify-center" id="db_mode_badge"></div>
+      </div>
+    </main>
+
+    <!-- Update Profile Modal -->
+    <div id="modal_update_profile" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 modal-overlay">
+      <div class="bg-white rounded-3xl p-6 max-w-sm w-full shadow-2xl border border-gray-100">
+        <div class="flex items-center justify-between mb-5">
+          <h3 class="font-['Space_Grotesk'] font-black text-lg text-[#2C2C2C]">THÔNG TIN CỦA TÔI</h3>
+          <button id="btn_close_profile_modal" class="w-8 h-8 rounded-full bg-gray-50 flex items-center justify-center text-gray-400 hover:bg-gray-100 hover:text-gray-800 transition cursor-pointer">
+            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+          </button>
+        </div>
+        <form id="form_update_profile" class="space-y-3.5">
+          <div>
+            <label class="block text-[10px] font-bold text-[#877A6E] uppercase mb-1">Họ và tên</label>
+            <input type="text" id="profile_fullname" required class="brand-input" />
+          </div>
+          <div>
+            <label class="block text-[10px] font-bold text-[#877A6E] uppercase mb-1">Số điện thoại (SĐT)</label>
+            <input type="text" id="profile_phone" disabled class="brand-input bg-gray-100 text-gray-500 border-transparent cursor-not-allowed" />
+            <p class="text-[9px] text-gray-400 mt-1">SĐT dùng làm tài khoản, không thể tự sửa.</p>
+          </div>
+          <div>
+            <label class="block text-[10px] font-bold text-[#877A6E] uppercase mb-1">Phòng Ban</label>
+            <input type="text" id="profile_dept" required class="brand-input" />
+          </div>
+          <div>
+            <label class="block text-[10px] font-bold text-[#877A6E] uppercase mb-1">Mã PIN (Mật khẩu)</label>
+            <input type="text" id="profile_pin" required class="brand-input font-mono" />
+          </div>
+          <button type="submit" class="btn-play w-full text-xs mt-2 uppercase tracking-wide cursor-pointer">Lưu Cập Nhật</button>
+        </form>
+      </div>
+    </div>
+
+    <script type="module" src="/app.js"></script>
+  </body>
+</html>
