@@ -213,7 +213,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       } else if (timeSpent <= (currentMaxTime * 2) / 3) {
         bonusEarned = Math.round(basePoint * 0.2); // Tier 2 (20%)
       } else {
-        bonusEarned = 0; // Tier 3 (0%)
+        bonusEarned = Math.round(basePoint * 0.1); // Tier 3 (10%)
       }
 
       currentScore += basePoint;
