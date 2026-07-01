@@ -438,12 +438,17 @@ export const db = {
       ];
 
       const correctIdx = parseInt(row['Đáp án đúng'] || row['correct'] || row['correct_option_index_1_to_4'] || '1') - 1;
+      
+      const point = parseInt(row['Point'] || row['point'] || row['Điểm'] || '10');
+      const timeLimit = parseInt(row['Time'] || row['time'] || row['Thời gian'] || '15');
 
       const questionId = genId('qn');
       const { error: qErr } = await supabase.from('questions').insert({
         id: questionId,
         quiz_id: quizId,
-        question_text: questionText
+        question_text: questionText,
+        point: isNaN(point) ? 10 : point,
+        time_limit: isNaN(timeLimit) ? 15 : timeLimit
       });
 
       if (qErr) {
@@ -495,12 +500,14 @@ export const db = {
     return enriched;
   },
 
-  async adminCreateQuestion(quizId, questionText, answers, correctIndex) {
+  async adminCreateQuestion(quizId, questionText, answers, correctIndex, point = 10, timeLimit = 15) {
     const questionId = genId('qn');
     const { error: qErr } = await supabase.from('questions').insert({
       id: questionId,
       quiz_id: quizId,
-      question_text: questionText
+      question_text: questionText,
+      point: point,
+      time_limit: timeLimit
     });
     if (qErr) return { success: false, message: qErr.message };
 
@@ -522,11 +529,15 @@ export const db = {
     return { success: true };
   },
 
-  async adminUpdateQuestion(questionId, questionText, answers, correctIndex) {
+  async adminUpdateQuestion(questionId, questionText, answers, correctIndex, point = 10, timeLimit = 15) {
     // 1. Cập nhật nội dung câu hỏi
     const { error: qErr } = await supabase
       .from('questions')
-      .update({ question_text: questionText })
+      .update({ 
+        question_text: questionText,
+        point: point,
+        time_limit: timeLimit
+      })
       .eq('id', questionId);
     if (qErr) return { success: false, message: qErr.message };
 

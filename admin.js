@@ -398,7 +398,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         <div class="flex items-start justify-between gap-3 mb-3">
           <p class="text-xs font-bold text-slate-900 flex-1"><span class="text-indigo-600 mr-1">${idx + 1}.</span>${q.question_text}</p>
           <div class="flex items-center gap-1.5">
-            <button class="edit-question-btn p-1.5 bg-amber-50 border border-amber-200 text-amber-600 rounded-lg hover:bg-amber-100 transition inline-flex items-center cursor-pointer text-[10px] font-bold gap-1" data-id="${q.id}" data-qtext="${encodeURIComponent(q.question_text)}" data-answers='${JSON.stringify((q.answers || []).map(a => ({text: a.answer_text, correct: a.is_correct})))}' title="Sửa câu hỏi">✏️ Sửa</button>
+            <button class="edit-question-btn p-1.5 bg-amber-50 border border-amber-200 text-amber-600 rounded-lg hover:bg-amber-100 transition inline-flex items-center cursor-pointer text-[10px] font-bold gap-1" data-id="${q.id}" data-qtext="${encodeURIComponent(q.question_text)}" data-point="${q.point || 10}" data-time="${q.time_limit || 15}" data-answers='${JSON.stringify((q.answers || []).map(a => ({text: a.answer_text, correct: a.is_correct})))}' title="Sửa câu hỏi">✏️ Sửa</button>
             <button class="del-question-btn p-1.5 bg-rose-50 border border-rose-200 text-rose-600 rounded-lg hover:bg-rose-100 transition inline-flex items-center cursor-pointer" data-id="${q.id}" title="Xóa câu hỏi">🗑️</button>
           </div>
         </div>
@@ -431,11 +431,15 @@ document.addEventListener('DOMContentLoaded', async () => {
       btn.addEventListener('click', () => {
         const qId = btn.getAttribute('data-id');
         const qText = decodeURIComponent(btn.getAttribute('data-qtext') || '');
+        const qPoint = btn.getAttribute('data-point') || '10';
+        const qTime = btn.getAttribute('data-time') || '15';
         let answers = [];
         try { answers = JSON.parse(btn.getAttribute('data-answers') || '[]'); } catch (_) {}
 
         editQuestionId.value = qId;
         editQuestionText.value = qText;
+        document.getElementById('edit_question_point').value = qPoint;
+        document.getElementById('edit_question_time').value = qTime;
 
         // Điền đáp án vào các field
         answers.forEach((ans, i) => {
@@ -502,10 +506,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         document.getElementById('ans_text_2')?.value.trim() || '',
         document.getElementById('ans_text_3')?.value.trim() || '',
       ];
+      const point = parseInt(document.getElementById('form_question_point').value || '10');
+      const timeLimit = parseInt(document.getElementById('form_question_time').value || '15');
       const correctRadio = document.querySelector('input[name="correct_answer_radio"]:checked');
       const correctIdx = correctRadio ? parseInt(correctRadio.value) : 0;
 
-      const result = await db.adminCreateQuestion(qId, qText, answers.filter(Boolean), correctIdx);
+      const result = await db.adminCreateQuestion(qId, qText, answers.filter(Boolean), correctIdx, point, timeLimit);
       if (result.success) {
         document.getElementById('modal_question').classList.add('hidden');
         const currentQ = await db.adminGetQuizzes().then(qs => qs.find(q => q.id === currentExpandedQuizId));
@@ -543,10 +549,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         document.getElementById('edit_ans_2')?.value.trim() || '',
         document.getElementById('edit_ans_3')?.value.trim() || '',
       ];
+      const point = parseInt(document.getElementById('edit_question_point')?.value || '10');
+      const timeLimit = parseInt(document.getElementById('edit_question_time')?.value || '15');
       const correctRadio = document.querySelector('input[name="edit_correct_radio"]:checked');
       const correctIdx = correctRadio ? parseInt(correctRadio.value) : 0;
 
-      const result = await db.adminUpdateQuestion(qId, qText, answers, correctIdx);
+      const result = await db.adminUpdateQuestion(qId, qText, answers, correctIdx, point, timeLimit);
       if (result.success) {
         if (modalEditQuestion) modalEditQuestion.classList.add('hidden');
         showAdminAlert('Cập nhật thành công ✅', 'Câu hỏi và đáp án đã được lưu.');

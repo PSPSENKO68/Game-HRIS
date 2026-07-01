@@ -349,6 +349,17 @@ Quy trình xin nghỉ phép từ 3 ngày trở lên cần báo trước mấy ng
             <textarea id="form_question_text" required rows="2" class="block w-full p-2 bg-slate-50 border border-slate-150 rounded-lg text-xs font-bold" placeholder="Nhập câu hỏi..."></textarea>
           </div>
 
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label for="form_question_point" class="block text-xs font-bold text-slate-400 mb-1">Điểm gốc</label>
+              <input type="number" id="form_question_point" required min="1" value="10" class="block w-full p-2 bg-slate-50 border border-slate-150 rounded-lg text-xs font-bold" />
+            </div>
+            <div>
+              <label for="form_question_time" class="block text-xs font-bold text-slate-400 mb-1">Thời gian (giây)</label>
+              <input type="number" id="form_question_time" required min="5" value="15" class="block w-full p-2 bg-slate-50 border border-slate-150 rounded-lg text-xs font-bold" />
+            </div>
+          </div>
+
           <p class="text-[10px] font-black uppercase tracking-wider text-slate-400 border-b border-slate-100 pb-1">Đáp án gợi ý (Hãy tích dấu chọn cho đáp án ĐÚNG nhất)</p>
 
           <!-- Ans 1 (Red style inside modal) -->
@@ -399,6 +410,17 @@ Quy trình xin nghỉ phép từ 3 ngày trở lên cần báo trước mấy ng
           <div>
             <label for="edit_question_text" class="block text-xs font-bold text-slate-400 mb-1">Nội dung câu hỏi</label>
             <textarea id="edit_question_text" required rows="3" class="block w-full p-2 bg-slate-50 border border-slate-200 rounded-lg text-xs font-bold" placeholder="Nhập câu hỏi..."></textarea>
+          </div>
+
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label for="edit_question_point" class="block text-xs font-bold text-slate-400 mb-1">Điểm gốc</label>
+              <input type="number" id="edit_question_point" required min="1" class="block w-full p-2 bg-slate-50 border border-slate-200 rounded-lg text-xs font-bold" />
+            </div>
+            <div>
+              <label for="edit_question_time" class="block text-xs font-bold text-slate-400 mb-1">Thời gian (giây)</label>
+              <input type="number" id="edit_question_time" required min="5" class="block w-full p-2 bg-slate-50 border border-slate-200 rounded-lg text-xs font-bold" />
+            </div>
           </div>
 
           <p class="text-[10px] font-black uppercase tracking-wider text-slate-400 border-b border-slate-100 pb-1">Đáp án (Tích chọn đáp án ĐÚNG)</p>

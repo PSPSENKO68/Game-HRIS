@@ -54,8 +54,15 @@ document.addEventListener('DOMContentLoaded', async () => {
   let questions = [];
   let currentIndex = 0;
   let currentScore = 0;
+  let bonusScore = 0;
   let correctCount = 0;
   let hasSelected = false;
+  
+  // Timer state
+  let timerInterval = null;
+  let currentRemainingTime = 0;
+  let currentMaxTime = 15;
+  const countdownTimer = document.getElementById('countdown_timer');
 
   // Active quiz metadata elements
   const activeQuiz = await db.getActiveQuiz();
@@ -106,6 +113,31 @@ document.addEventListener('DOMContentLoaded', async () => {
     const currentQuestion = questions[index];
     if (!currentQuestion) return;
 
+    // Reset and Start Timer
+    if (timerInterval) clearInterval(timerInterval);
+    currentMaxTime = currentQuestion.time_limit || 15;
+    currentRemainingTime = currentMaxTime;
+    if (countdownTimer) {
+      countdownTimer.textContent = currentRemainingTime;
+      countdownTimer.className = 'absolute top-4 right-4 inline-flex items-center justify-center w-9 h-9 bg-rose-50 border-2 border-rose-200 rounded-full text-rose-600 font-black text-xs shadow-sm transition-colors';
+    }
+
+    timerInterval = setInterval(() => {
+      currentRemainingTime--;
+      if (countdownTimer) countdownTimer.textContent = currentRemainingTime;
+      
+      if (currentRemainingTime <= 5 && countdownTimer) {
+         countdownTimer.classList.add('animate-pulse', 'bg-rose-200', 'text-rose-800');
+      }
+
+      if (currentRemainingTime <= 0) {
+        clearInterval(timerInterval);
+        if (!hasSelected) {
+          handleAnswerSelection(null); // Time out
+        }
+      }
+    }, 1000);
+
     // Counter UI
     questionCounter.textContent = `Câu ${index + 1}/${questions.length}`;
     scoreDisplay.textContent = currentScore;
@@ -152,22 +184,40 @@ document.addEventListener('DOMContentLoaded', async () => {
   });
 
   function handleAnswerSelection(selectedButton) {
+    if (hasSelected) return; // Prevent double trigger
     hasSelected = true;
+    if (timerInterval) clearInterval(timerInterval);
+
     answersContainer.classList.add('opacity-80');
 
-    const isCorrect = selectedButton.getAttribute('data-correct') === 'true';
-    const selectedAnswerId = selectedButton.getAttribute('data-id');
+    const isCorrect = selectedButton ? (selectedButton.getAttribute('data-correct') === 'true') : false;
+    const selectedAnswerId = selectedButton ? selectedButton.getAttribute('data-id') : null;
 
     // Freeze all choices
     Object.keys(optButtons).forEach(key => {
       optButtons[key].btn.disabled = true;
     });
 
+    const currentQuestion = questions[currentIndex];
+    const basePoint = currentQuestion.point || 10;
+
     if (isCorrect) {
       // Correct flow
       correctCount += 1;
-      const pointsPerQuestion = 100 / questions.length;
-      currentScore = Math.round(correctCount * pointsPerQuestion);
+      
+      // Speed Bonus Logic
+      let bonusEarned = 0;
+      const timeSpent = currentMaxTime - currentRemainingTime;
+      if (timeSpent <= currentMaxTime / 3) {
+        bonusEarned = Math.round(basePoint * 0.5); // Tier 1 (50%)
+      } else if (timeSpent <= (currentMaxTime * 2) / 3) {
+        bonusEarned = Math.round(basePoint * 0.2); // Tier 2 (20%)
+      } else {
+        bonusEarned = 0; // Tier 3 (0%)
+      }
+
+      currentScore += basePoint;
+      bonusScore += bonusEarned;
       
       // Update score display immediately for microfeedback
       scoreDisplay.textContent = currentScore;
@@ -180,16 +230,20 @@ document.addEventListener('DOMContentLoaded', async () => {
       feedbackIcon.className = "w-10 h-10 rounded-2xl bg-white text-emerald-600 flex items-center justify-center font-black text-xl";
       feedbackIcon.textContent = "✓";
       feedbackTitle.textContent = "CHÍNH XÁC! 🎉";
-      feedbackSub.textContent = `+${Math.round(pointsPerQuestion)} Điểm công ty`;
+      feedbackSub.textContent = `+${basePoint} Điểm${bonusEarned > 0 ? ` (+${bonusEarned}đ Thưởng Tốc Độ)` : ''}`;
     } else {
       // Incorrect flow
-      selectedButton.classList.add('opacity-40', 'ring-4', 'ring-rose-400');
+      if (selectedButton) {
+        selectedButton.classList.add('opacity-40', 'ring-4', 'ring-rose-400');
+        feedbackTitle.textContent = "SAI MẤT RỒI! 😢";
+      } else {
+        feedbackTitle.textContent = "HẾT GIỜ! ⏰";
+      }
 
       // Style feedback banner red error
       feedbackBanner.className = "mb-6 p-4 rounded-3xl bg-rose-600 text-white flex items-center justify-between shadow-lg animate-shake";
       feedbackIcon.className = "w-10 h-10 rounded-2xl bg-white text-rose-600 flex items-center justify-center font-black text-xl animate-bounce";
       feedbackIcon.textContent = "✗";
-      feedbackTitle.textContent = "SAI MẤT RỒI! 😢";
       feedbackSub.textContent = "Cố gắng câu sau nhé!";
     }
 
@@ -225,12 +279,12 @@ document.addEventListener('DOMContentLoaded', async () => {
       btnNextQuestion.textContent = "ĐANG LƯU...";
 
       // If quiz finished, score is currentScore (max 100)
-      const earnedBonus = 0;
+      const earnedBonus = bonusScore;
       const totalQuizScore = currentScore;
 
       try {
         // Save results to Database
-        await db.savePlayRecord(user.id, quizId, totalQuizScore);
+        await db.savePlayRecord(user.id, quizId, totalQuizScore + earnedBonus);
 
         // Save session items so results page can display them elegantly
         sessionStorage.setItem('last_quiz_score', totalQuizScore);
