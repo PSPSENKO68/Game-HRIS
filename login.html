@@ -170,14 +170,6 @@
           </button>
         </form>
 
-        <!-- Demo Credentials -->
-        <div class="mt-6 pt-5 border-t border-white/5">
-          <p class="text-[10px] font-bold text-white/30 uppercase tracking-widest text-center mb-2">Tài khoản quản trị kiểm thử</p>
-          <button type="button" onclick="fillCreds('nduy6374@gmail.com', 'thisistheSuperAdmin')" class="demo-btn">
-            <span class="font-bold text-[#E9C691] text-[11px]">nduy6374@gmail.com (Super Admin)</span><br/>
-            <span class="text-white/40 text-[10px]">Pass: thisistheSuperAdmin</span>
-          </button>
-        </div>
       </div>
     </main>
 
@@ -186,11 +178,7 @@
     </footer>
 
     <script>
-      function fillCreds(code, pin) {
-        document.getElementById('employee_code').value = code;
-        document.getElementById('pin').value = pin;
-        document.getElementById('pin').focus();
-      }
+      // Removed fillCreds function
     </script>
     <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
     <script type="module" src="/auth.js"></script>
