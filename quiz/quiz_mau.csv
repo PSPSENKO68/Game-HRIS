@@ -1,11 +1,4 @@
-Câu hỏi,Answer 1,Answer 2,Answer 3,Answer 4,Đáp án đúng
-Mật khẩu máy tính làm việc của nhân viên tối thiểu phải có bao nhiêu ký tự theo quy định bảo mật?,8 ký tự ít nhất 1 chữ hoa số và ký tự đặc biệt,6 ký tự chỉ cần có chữ và số,12 ký tự viết thường toàn bộ,Không cần đặt mật khẩu hoặc đổi mật khẩu,1
-Khi phát hiện có email lạ yêu cầu cung cấp thông tin đăng nhập tài khoản công ty bạn nên làm gì?,Báo cáo ngay cho bộ phận IT Security / Quản Trị Hệ Thống,Nhập thử thông tin đăng nhập của mình để kiểm tra,Bỏ qua xóa email và không báo cáo gì thêm,Chuyển tiếp cho các đồng nghiệp khác để cảnh báo họ nhập cùng,1
-Quy trình xin nghỉ phép từ 3 ngày trở lên tại công ty cần phê duyệt trước bao nhiêu ngày?,Trước tối thiểu 5 ngày làm việc,Đăng ký nghỉ hôm trước hôm sau được nghỉ luôn,Thông báo qua tin nhắn Chat vào sáng ngày nghỉ,Chỉ cần báo trước 1 ngày làm việc,1
-Giá trị cốt lõi hàng đầu trong văn hóa làm việc của doanh nghiệp chúng ta là gì?,Sự Chính trực - Trách nhiệm & Hợp tác,Làm việc độc lập tối đa không chia nhỏ thông tin,Tự do thời gian đi làm muộn về sớm không bó buộc,Đặt lợi nhuận bán hàng lên trên hết bỏ qua quy trình,1
-Khi ra về hoặc rời bàn làm việc quá 5 phút hành động nào sau đây là chuẩn mực bảo mật?,Khóa màn hình máy tính làm việc (Phím Windows + L),Để nguyên màn hình sáng để đồng nghiệp tiện dùng khi cần,Chờ máy tính tự tắt chế độ ngủ sau 30 phút rảnh,Nhờ đồng nghiệp ngồi cạnh để mắt hộ màn hình,1
-Tài liệu đóng dấu "MẬT" của công ty được phân loại xử lý như thế nào?,Chỉ nhân sự có thẩm quyền trao đổi và lưu trữ dưới dạng mã hóa,Có thể chụp ảnh đăng lên mạng xã hội chia sẻ,Sao gửi thoải mái qua hòm thư cá nhân Gmail,In ra để tự do trên bàn làm việc cho mọi người cùng đọc,1
-Khi xảy ra sự cố cháy nổ tại văn phòng số điện thoại khẩn cấp nội bộ báo Ban An Toàn là gì?,Hotline An Toàn & Bảo Vệ Công Ty (hoặc 114),Gọi điện thoại hỏi han người thân để xin ý kiến khuyên bảo,Nhắn tin hỏi han vào nhóm tán gẫu Facebook,Cứ tiếp tục ngồi làm việc và mở nhạc to chờ IT sửa chữa,1
-Thời gian làm việc chính thức quy định của văn phòng công ty bắt đầu từ mấy giờ?,08:30 sáng hằng ngày,09:30 sáng hằng ngày,Tùy chọn thỏa thích không giới hạn khung giờ,10:00 sáng hằng ngày,1
-Hành vi nào sau đây BỊ HẠN CHẾ khi sử dụng mạng Wifi công ty?,Tải phim quá dung lượng lớn chơi game online xem phim lậu,Tra cứu thông tin phục vụ phát triển dự án công ty,Đọc báo tin tức chính thống cập nhật tài chính,Gửi bản vẽ kỹ thuật chất lượng cao tới Ban Giám Đốc,1
-Ý nghĩa của chương trình 5S áp dụng tại môi trường làm việc văn phòng là gì?,Sàng lọc - Sắp xếp - Sạch sẽ - Săn sóc - Sẵn sàng,Sáng dậy - Sớm trưa - Sống khỏe - Sướng vui - Sẵn có,Siêng năng làm việc đủ 5 ngày trên tuần không nghỉ phép,Sức khỏe dồi dào - Song hành cùng IT - Sáng tạo sáng kiến,1
+"C�u h?i","Answer 1","Answer 2","Answer 3","Answer 4","��p �n d�ng","Point","Time"
+"Nhi?t d? nu?ng th?t b� ti�u chu?n l� bao nhi�u?","180�C","200�C","220�C","250�C","2","10","15"
+"Quy tr�nh r?a tay chu?n g?m bao nhi�u bu?c?","3 bu?c","5 bu?c","6 bu?c","7 bu?c","3","15","20"
+"Ai l� qu?n l� ca hi?n t?i?","Anh A","Ch? B","Anh C","Ch? D","1","10","10"
