@@ -198,6 +198,22 @@ document.addEventListener('DOMContentLoaded', async () => {
           formUserScore.value = targetU.total_score || 0;
           formUserMaxPlays.value = (targetU.max_plays !== null && targetU.max_plays !== undefined) ? targetU.max_plays : '';
           formUserActive.checked = targetU.is_active;
+
+          // Phân quyền: set dropdown role
+          const roleSelect = document.getElementById('form_user_role');
+          if (roleSelect) {
+            if (targetU.role === 'owner') {
+              // Owner: hiển thị là owner, không cho đổi
+              roleSelect.value = 'owner';
+              roleSelect.disabled = true;
+              roleSelect.querySelector('option[value="owner"]').removeAttribute('disabled');
+            } else {
+              roleSelect.value = targetU.role || 'user';
+              roleSelect.disabled = false;
+              roleSelect.querySelector('option[value="owner"]').setAttribute('disabled', '');
+            }
+          }
+
           document.getElementById('modal_user_title').textContent = 'Chỉnh sửa nhân sự';
           modalUser.classList.remove('hidden');
         }
@@ -226,6 +242,13 @@ document.addEventListener('DOMContentLoaded', async () => {
       formUserId.value = '';
       formUser.reset();
       if (formUserMaxPlays) formUserMaxPlays.value = '';
+      // Reset role về mặc định 'user' khi thêm mới
+      const roleSelect = document.getElementById('form_user_role');
+      if (roleSelect) {
+        roleSelect.value = 'user';
+        roleSelect.disabled = false;
+        roleSelect.querySelector('option[value="owner"]').setAttribute('disabled', '');
+      }
       document.getElementById('modal_user_title').textContent = 'Thêm Nhân Viên Mới';
       modalUser.classList.remove('hidden');
     });
@@ -240,6 +263,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     formUser.addEventListener('submit', async (e) => {
       e.preventDefault();
       const uId = formUserId.value;
+      const roleSelect = document.getElementById('form_user_role');
+      const selectedRole = (roleSelect && !roleSelect.disabled) ? roleSelect.value : undefined;
+
       const userData = {
         employee_code: formUserCode.value.trim(),
         full_name: formUserFullName.value.trim(),
@@ -247,8 +273,18 @@ document.addEventListener('DOMContentLoaded', async () => {
         pin: formUserPin.value.trim(),
         total_score: parseInt(formUserScore.value || 0),
         is_active: formUserActive.checked,
-        max_plays: (formUserMaxPlays && formUserMaxPlays.value.trim() !== '') ? parseInt(formUserMaxPlays.value) : null
+        max_plays: (formUserMaxPlays && formUserMaxPlays.value.trim() !== '') ? parseInt(formUserMaxPlays.value) : null,
+        ...(selectedRole ? { role: selectedRole } : {})
       };
+
+      // Cảnh báo nếu admin tự hạ quyền chính mình
+      if (uId && selectedRole === 'user') {
+        const sessionUser = JSON.parse(sessionStorage.getItem('current_user') || '{}');
+        if (sessionUser.id === uId) {
+          showAdminAlert('⚠️ Cảnh báo', 'Bạn đang tự hạ quyền chính mình xuống "Nhân viên". Hành động này sẽ mất quyền Admin ngay sau khi lưu.');
+          return;
+        }
+      }
 
       let result;
       if (uId) {

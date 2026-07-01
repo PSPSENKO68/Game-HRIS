@@ -263,6 +263,16 @@ Quy trình xin nghỉ phép từ 3 ngày trở lên cần báo trước mấy ng
             <input type="text" id="form_user_dept" required class="block w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-bold" placeholder="Phòng Kế Hoạch" />
           </div>
 
+          <div>
+            <label for="form_user_role" class="block text-xs font-bold text-slate-400 mb-1">Vai Trò (Phân Quyền)</label>
+            <select id="form_user_role" class="block w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-bold focus:ring-2 focus:ring-indigo-500">
+              <option value="user">👤 Nhân Viên (user) — Chỉ được chơi quiz</option>
+              <option value="admin">⚡ Quản Trị Viên (admin) — Truy cập trang Admin</option>
+              <option value="owner" disabled>👑 Chủ Hệ Thống (owner) — Không thể thay đổi</option>
+            </select>
+            <p class="text-[10px] text-slate-400 mt-1">⚠️ Cấp quyền Admin sẽ cho phép nhân viên này truy cập toàn bộ bảng điều khiển.</p>
+          </div>
+
           <div class="grid grid-cols-2 gap-3">
             <div>
               <label for="form_user_pin" class="block text-xs font-bold text-slate-400 mb-1">Mã PIN / Mật khẩu</label>
