@@ -34,7 +34,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   const formUserFullName = document.getElementById('form_user_fullname');
   const formUserDept = document.getElementById('form_user_dept');
   const formUserPin = document.getElementById('form_user_pin');
-  const formUserScore = document.getElementById('form_user_score');
   const formUserMaxPlays = document.getElementById('form_user_max_plays');
   const formUserActive = document.getElementById('form_user_active');
   const btnOpenUserModal = document.getElementById('btn_open_user_modal');
@@ -195,7 +194,6 @@ document.addEventListener('DOMContentLoaded', async () => {
           formUserFullName.value = targetU.full_name;
           formUserDept.value = targetU.department || '';
           formUserPin.value = targetU.pin;
-          formUserScore.value = targetU.total_score || 0;
           formUserMaxPlays.value = (targetU.max_plays !== null && targetU.max_plays !== undefined) ? targetU.max_plays : '';
           formUserActive.checked = targetU.is_active;
 
@@ -271,7 +269,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         full_name: formUserFullName.value.trim(),
         department: formUserDept.value.trim(),
         pin: formUserPin.value.trim(),
-        total_score: parseInt(formUserScore.value || 0),
         is_active: formUserActive.checked,
         max_plays: (formUserMaxPlays && formUserMaxPlays.value.trim() !== '') ? parseInt(formUserMaxPlays.value) : null,
         ...(selectedRole ? { role: selectedRole } : {})
