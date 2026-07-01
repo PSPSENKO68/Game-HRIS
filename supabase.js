@@ -26,35 +26,7 @@ export async function bootstrapDatabase() {
       return { success: false, reason: 'table_missing' };
     }
 
-    // Kiểm tra super admin đã tồn tại chưa
-    const { data: existing } = await supabase
-      .from('users')
-      .select('id')
-      .eq('employee_code', 'nduy6374@gmail.com')
-      .single();
-
-    if (existing) {
-      return { success: true, reason: 'already_exists' };
-    }
-
-    // Chưa có → tạo mới
-    const { error: insertErr } = await supabase.from('users').insert({
-      id: 'u_superadmin_001',
-      employee_code: 'nduy6374@gmail.com',
-      full_name: 'Super Admin',
-      department: 'Ban Giám Đốc',
-      pin: 'thisistheSuperAdmin',
-      role: 'owner',
-      is_active: true,
-      total_score: 0,
-      max_plays: null,
-      created_at: new Date().toISOString()
-    });
-
-    if (insertErr) {
-      console.error('❌ Không thể tạo Super Admin:', insertErr.message);
-      return { success: false, reason: insertErr.message };
-    }
+    // Đã bỏ logic tự động tạo Super Admin theo yêu cầu của user.
 
     // Seed cấu hình mặc định
     await supabase.from('settings').upsert({ key: 'max_plays_per_day', value: '3' });
