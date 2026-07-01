@@ -324,7 +324,7 @@ Quy trình xin nghỉ phép từ 3 ngày trở lên cần báo trước mấy ng
             <button type="button" id="btn_close_quiz_modal" class="bg-slate-100 text-slate-700 font-bold py-2 px-4 rounded-xl text-xs cursor-pointer">
               Bỏ qua
             </button>
-            <button type="submit" class="bg-indigo-650 text-white font-bold py-2 px-4 rounded-xl text-xs cursor-pointer">
+            <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-xl text-xs cursor-pointer">
               Tạo đề Quiz
             </button>
           </div>
@@ -375,8 +375,53 @@ Quy trình xin nghỉ phép từ 3 ngày trở lên cần báo trước mấy ng
             <button type="button" id="btn_close_question_modal" class="bg-slate-100 text-slate-700 font-bold py-2 px-4 rounded-xl text-xs cursor-pointer">
               Đóng
             </button>
-            <button type="submit" class="bg-indigo-650 text-white font-bold py-2 px-4 rounded-xl text-xs cursor-pointer">
+            <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-xl text-xs cursor-pointer">
               Thêm vào Quiz
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+
+    <!-- FLOATING MODAL 4: EDIT QUESTION FORM -->
+    <div id="modal_edit_question" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
+      <div class="bg-white rounded-3xl p-6 max-w-md w-full shadow-2xl border border-slate-100 overflow-y-auto max-h-[90vh]">
+        <h3 class="text-base font-bold text-slate-900 mb-1">✏️ Sửa câu hỏi</h3>
+        <p class="text-[11px] text-slate-400 mb-4">Chỉnh sửa nội dung câu hỏi, đáp án và đánh dấu đáp án đúng.</p>
+        <form id="form_edit_question" class="space-y-4">
+          <input type="hidden" id="edit_question_id" />
+
+          <div>
+            <label for="edit_question_text" class="block text-xs font-bold text-slate-400 mb-1">Nội dung câu hỏi</label>
+            <textarea id="edit_question_text" required rows="3" class="block w-full p-2 bg-slate-50 border border-slate-200 rounded-lg text-xs font-bold" placeholder="Nhập câu hỏi..."></textarea>
+          </div>
+
+          <p class="text-[10px] font-black uppercase tracking-wider text-slate-400 border-b border-slate-100 pb-1">Đáp án (Tích chọn đáp án ĐÚNG)</p>
+
+          <div class="flex items-center space-x-2">
+            <input type="radio" name="edit_correct_radio" value="0" checked class="w-4 h-4 text-rose-500" />
+            <input type="text" id="edit_ans_0" required class="block flex-1 p-2 bg-rose-50 border border-rose-100 rounded-lg text-xs font-bold" placeholder="Đáp án 1 (Đỏ)" />
+          </div>
+          <div class="flex items-center space-x-2">
+            <input type="radio" name="edit_correct_radio" value="1" class="w-4 h-4 text-blue-500" />
+            <input type="text" id="edit_ans_1" required class="block flex-1 p-2 bg-blue-50 border border-blue-100 rounded-lg text-xs font-bold" placeholder="Đáp án 2 (Xanh dương)" />
+          </div>
+          <div class="flex items-center space-x-2">
+            <input type="radio" name="edit_correct_radio" value="2" class="w-4 h-4 text-amber-500" />
+            <input type="text" id="edit_ans_2" required class="block flex-1 p-2 bg-amber-50 border border-amber-100 rounded-lg text-xs font-bold" placeholder="Đáp án 3 (Vàng)" />
+          </div>
+          <div class="flex items-center space-x-2">
+            <input type="radio" name="edit_correct_radio" value="3" class="w-4 h-4 text-emerald-500" />
+            <input type="text" id="edit_ans_3" required class="block flex-1 p-2 bg-emerald-50 border border-emerald-100 rounded-lg text-xs font-bold" placeholder="Đáp án 4 (Xanh lá)" />
+          </div>
+
+          <div class="grid grid-cols-2 gap-3 pt-3">
+            <button type="button" id="btn_close_edit_question" class="bg-slate-100 text-slate-700 font-bold py-2 px-4 rounded-xl text-xs cursor-pointer">
+              Đóng
+            </button>
+            <button type="submit" class="bg-amber-500 hover:bg-amber-600 text-white font-bold py-2 px-4 rounded-xl text-xs cursor-pointer">
+              💾 Lưu thay đổi
             </button>
           </div>
         </form>

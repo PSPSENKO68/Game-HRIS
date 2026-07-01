@@ -364,7 +364,10 @@ document.addEventListener('DOMContentLoaded', async () => {
       div.innerHTML = `
         <div class="flex items-start justify-between gap-3 mb-3">
           <p class="text-xs font-bold text-slate-900 flex-1"><span class="text-indigo-600 mr-1">${idx + 1}.</span>${q.question_text}</p>
-          <button class="del-question-btn p-1 text-rose-400 hover:text-rose-600 cursor-pointer transition" data-id="${q.id}" title="Xóa câu hỏi">🗑️</button>
+          <div class="flex items-center gap-1.5">
+            <button class="edit-question-btn p-1.5 bg-amber-50 border border-amber-200 text-amber-600 rounded-lg hover:bg-amber-100 transition inline-flex items-center cursor-pointer text-[10px] font-bold gap-1" data-id="${q.id}" data-qtext="${encodeURIComponent(q.question_text)}" data-answers='${JSON.stringify((q.answers || []).map(a => ({text: a.answer_text, correct: a.is_correct})))}' title="Sửa câu hỏi">✏️ Sửa</button>
+            <button class="del-question-btn p-1.5 bg-rose-50 border border-rose-200 text-rose-600 rounded-lg hover:bg-rose-100 transition inline-flex items-center cursor-pointer" data-id="${q.id}" title="Xóa câu hỏi">🗑️</button>
+          </div>
         </div>
         <div class="grid grid-cols-2 gap-2">
           ${(q.answers || []).map(a => `
@@ -382,6 +385,36 @@ document.addEventListener('DOMContentLoaded', async () => {
           await db.adminDeleteQuestion(btn.getAttribute('data-id'));
           showQuizQuestions(quizId, title, weekLabel);
         }
+      });
+    });
+
+    // Bind edit question buttons
+    const modalEditQuestion = document.getElementById('modal_edit_question');
+    const formEditQuestion = document.getElementById('form_edit_question');
+    const editQuestionId = document.getElementById('edit_question_id');
+    const editQuestionText = document.getElementById('edit_question_text');
+
+    document.querySelectorAll('.edit-question-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const qId = btn.getAttribute('data-id');
+        const qText = decodeURIComponent(btn.getAttribute('data-qtext') || '');
+        let answers = [];
+        try { answers = JSON.parse(btn.getAttribute('data-answers') || '[]'); } catch (_) {}
+
+        editQuestionId.value = qId;
+        editQuestionText.value = qText;
+
+        // Điền đáp án vào các field
+        answers.forEach((ans, i) => {
+          const field = document.getElementById(`edit_ans_${i}`);
+          if (field) field.value = ans.text || '';
+          if (ans.correct) {
+            const radio = document.querySelector(`input[name="edit_correct_radio"][value="${i}"]`);
+            if (radio) radio.checked = true;
+          }
+        });
+
+        if (modalEditQuestion) modalEditQuestion.classList.remove('hidden');
       });
     });
   }
@@ -431,12 +464,13 @@ document.addEventListener('DOMContentLoaded', async () => {
       const qId = formQuestionQuizId.value;
       const qText = formQuestionText.value.trim();
       const answers = [
-        document.getElementById('form_answer_1')?.value.trim() || '',
-        document.getElementById('form_answer_2')?.value.trim() || '',
-        document.getElementById('form_answer_3')?.value.trim() || '',
-        document.getElementById('form_answer_4')?.value.trim() || '',
+        document.getElementById('ans_text_0')?.value.trim() || '',
+        document.getElementById('ans_text_1')?.value.trim() || '',
+        document.getElementById('ans_text_2')?.value.trim() || '',
+        document.getElementById('ans_text_3')?.value.trim() || '',
       ];
-      const correctIdx = parseInt(document.getElementById('form_correct_answer')?.value || '0') - 1;
+      const correctRadio = document.querySelector('input[name="correct_answer_radio"]:checked');
+      const correctIdx = correctRadio ? parseInt(correctRadio.value) : 0;
 
       const result = await db.adminCreateQuestion(qId, qText, answers.filter(Boolean), correctIdx);
       if (result.success) {
@@ -452,6 +486,45 @@ document.addEventListener('DOMContentLoaded', async () => {
   const btnCloseQuestion = document.getElementById('btn_close_question_modal');
   if (btnCloseQuestion) {
     btnCloseQuestion.addEventListener('click', () => document.getElementById('modal_question').classList.add('hidden'));
+  }
+
+  // Edit Question Modal: Close + Submit
+  const modalEditQuestion = document.getElementById('modal_edit_question');
+  const formEditQuestion = document.getElementById('form_edit_question');
+
+  const btnCloseEditQuestion = document.getElementById('btn_close_edit_question');
+  if (btnCloseEditQuestion) {
+    btnCloseEditQuestion.addEventListener('click', () => {
+      if (modalEditQuestion) modalEditQuestion.classList.add('hidden');
+    });
+  }
+
+  if (formEditQuestion) {
+    formEditQuestion.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const qId = document.getElementById('edit_question_id')?.value;
+      const qText = document.getElementById('edit_question_text')?.value.trim();
+      const answers = [
+        document.getElementById('edit_ans_0')?.value.trim() || '',
+        document.getElementById('edit_ans_1')?.value.trim() || '',
+        document.getElementById('edit_ans_2')?.value.trim() || '',
+        document.getElementById('edit_ans_3')?.value.trim() || '',
+      ];
+      const correctRadio = document.querySelector('input[name="edit_correct_radio"]:checked');
+      const correctIdx = correctRadio ? parseInt(correctRadio.value) : 0;
+
+      const result = await db.adminUpdateQuestion(qId, qText, answers, correctIdx);
+      if (result.success) {
+        if (modalEditQuestion) modalEditQuestion.classList.add('hidden');
+        showAdminAlert('Cập nhật thành công ✅', 'Câu hỏi và đáp án đã được lưu.');
+        if (currentExpandedQuizId) {
+          const currentQ = await db.adminGetQuizzes().then(qs => qs.find(q => q.id === currentExpandedQuizId));
+          showQuizQuestions(currentExpandedQuizId, currentQ?.title || '', currentQ?.week_no || '');
+        }
+      } else {
+        showAdminAlert('Lỗi cập nhật', result.message || 'Không thể lưu thay đổi.');
+      }
+    });
   }
 
   // ── 3. IMPORT ────────────────────────────────────────────────────────────────

@@ -550,6 +550,39 @@ export const db = {
     return { success: true };
   },
 
+  async adminUpdateQuestion(questionId, questionText, answers, correctIndex) {
+    // 1. Cập nhật nội dung câu hỏi
+    const { error: qErr } = await supabase
+      .from('questions')
+      .update({ question_text: questionText })
+      .eq('id', questionId);
+    if (qErr) return { success: false, message: qErr.message };
+
+    // 2. Xóa toàn bộ đáp án cũ
+    const { error: delErr } = await supabase
+      .from('answers')
+      .delete()
+      .eq('question_id', questionId);
+    if (delErr) return { success: false, message: delErr.message };
+
+    // 3. Insert lại đáp án mới
+    const answerRows = answers
+      .filter(t => t.trim())
+      .map((text, i) => ({
+        id: genId('a'),
+        question_id: questionId,
+        answer_text: text.trim(),
+        is_correct: i === parseInt(correctIndex)
+      }));
+
+    if (answerRows.length > 0) {
+      const { error: aErr } = await supabase.from('answers').insert(answerRows);
+      if (aErr) return { success: false, message: aErr.message };
+    }
+
+    return { success: true };
+  },
+
   // ── 11. ADMIN: IMPORT USERS TỪ CSV/XLSX ────────────────────────────────
   async adminImportUsersFromRows(rows, overwrite = false) {
     let created = 0, updated = 0, skipped = 0;

@@ -30,10 +30,23 @@ document.addEventListener('DOMContentLoaded', async () => {
   const total = parseInt(sessionStorage.getItem('last_quiz_total_questions') || '10');
   const bonus = parseInt(sessionStorage.getItem('last_quiz_bonus') || '20');
 
+  const totalScoreDisplay = document.getElementById('total_score_display');
+
   // Populate UI elements
   if (scoreEarned) scoreEarned.textContent = score;
   if (correctCounter) correctCounter.textContent = `${correct}/${total}`;
   if (bonusBadge) bonusBadge.textContent = `+${bonus}đ`;
+
+  // Fetch và hiển thị tổng điểm tích lũy mới nhất từ DB
+  if (totalScoreDisplay) {
+    try {
+      const freshUser = await db.getUserById(user.id);
+      const totalScore = freshUser ? (freshUser.total_score || 0) : 0;
+      totalScoreDisplay.innerHTML = `<span class="text-[#E9C691]">${totalScore}</span> <span class="text-white/50 text-base font-bold">điểm</span>`;
+    } catch (_) {
+      totalScoreDisplay.textContent = '—';
+    }
+  }
 
   // Dynamic feedback personalized comments
   if (userFeedbackMsg) {
