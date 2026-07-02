@@ -221,6 +221,12 @@ document.addEventListener('DOMContentLoaded', async () => {
       
       // Update score display immediately for microfeedback
       scoreDisplay.textContent = currentScore;
+      const scorePill = document.getElementById('score_pill');
+      if (scorePill) {
+        scorePill.classList.remove('score-animate');
+        void scorePill.offsetWidth; // trigger reflow
+        scorePill.classList.add('score-animate');
+      }
 
       // Animate selected button
       selectedButton.classList.add('ring-4', 'ring-emerald-400');

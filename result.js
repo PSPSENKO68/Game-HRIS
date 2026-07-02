@@ -37,12 +37,23 @@ document.addEventListener('DOMContentLoaded', async () => {
   if (correctCounter) correctCounter.textContent = `${correct}/${total}`;
   if (bonusBadge) bonusBadge.textContent = `+${bonus}đ`;
 
-  // Fetch và hiển thị tổng điểm tích lũy mới nhất từ DB
+  // Fetch và hiển thị tổng điểm tích lũy mới nhất từ DB và Hạng
   if (totalScoreDisplay) {
     try {
       const freshUser = await db.getUserById(user.id);
       const totalScore = freshUser ? (freshUser.total_score || 0) : 0;
       totalScoreDisplay.innerHTML = `<span class="text-[#E9C691]">${totalScore}</span> <span class="text-white/50 text-base font-bold">điểm</span>`;
+      
+      const rankBadge = document.getElementById('rank_badge');
+      if (rankBadge) {
+        const rank = await db.getUserRank(user.id);
+        rankBadge.textContent = `Hạng #${rank}`;
+        
+        // Kích hoạt animation nảy lên
+        setTimeout(() => {
+          rankBadge.classList.add('rank-animate');
+        }, 300);
+      }
     } catch (_) {
       totalScoreDisplay.textContent = '—';
     }

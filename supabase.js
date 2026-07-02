@@ -621,7 +621,33 @@ export const db = {
     return { success: true, created, updated, skipped };
   },
 
-  // ── 12. EXPORT BÁO CÁO ĐIỂM SỐ (XLSX) ──────────────────────────────────
+  // ── 12. GET USER RANK ──────────────────────────────────────────────────────
+  async getUserRank(userId) {
+    const { data: users, error } = await supabase
+      .from('users')
+      .select('id, total_score, role')
+      .neq('role', 'owner')
+      .order('total_score', { ascending: false });
+      
+    if (error || !users) return '-';
+    
+    // Tìm vị trí rank, người đồng điểm có cùng hạng
+    let currentRank = 1;
+    let prevScore = -1;
+    
+    for (let i = 0; i < users.length; i++) {
+      if (prevScore !== -1 && users[i].total_score < prevScore) {
+        currentRank = i + 1;
+      }
+      if (users[i].id === userId) {
+        return currentRank;
+      }
+      prevScore = users[i].total_score;
+    }
+    return '-';
+  },
+
+  // ── 13. EXPORT BÁO CÁO ĐIỂM SỐ (XLSX) ──────────────────────────────────
   async adminExportScoresXLSX(period = 'total') {
     const aggregated = await db.adminGetAggregatedScores();
     if (!window.XLSX) {
