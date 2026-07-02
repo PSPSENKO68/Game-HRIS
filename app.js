@@ -23,6 +23,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   const userEmployeeCode = document.getElementById('user_employee_code');
   const userTotalScore = document.getElementById('user_total_score');
   const userPlaysToday = document.getElementById('user_plays_today');
+  const userRank = document.getElementById('user_rank');
   const activeQuizPanel = document.getElementById('active_quiz_panel');
   const quizTitle = document.getElementById('quiz_title');
   const btnPlayQuiz = document.getElementById('btn_play_quiz');
@@ -47,6 +48,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     userEmployeeCode.textContent = user.employee_code;
     userAvatarChar.textContent = user.full_name ? user.full_name.charAt(0).toUpperCase() : 'U';
     userTotalScore.textContent = user.total_score || 0;
+
+    if (userRank) {
+      db.getUserRank(user.id).then(rank => {
+        userRank.textContent = `#${rank}`;
+      }).catch(() => {
+        userRank.textContent = `#--`;
+      });
+    }
 
     // Tính giới hạn lượt chơi: ưu tiên max_plays riêng của user, fallback về setting chung
     const playsNum = await db.getPlaysToday(user.id);
