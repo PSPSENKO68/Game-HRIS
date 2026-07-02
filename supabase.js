@@ -386,6 +386,7 @@ export const db = {
     const newQuiz = {
       id: genId('q'),
       title: (quizData.title || '').trim(),
+      month_no: parseInt(quizData.month_no) || 1,
       week_no: parseInt(quizData.week_no) || 1,
       active: quizData.active || false,
       created_at: new Date().toISOString()
@@ -417,9 +418,9 @@ export const db = {
    * Import toàn bộ câu hỏi từ rows (mảng objects) vào quiz mới.
    * Format mỗi row: { 'Câu hỏi', 'Answer 1', 'Answer 2', 'Answer 3', 'Answer 4', 'Đáp án đúng' }
    */
-  async adminImportQuizFromRows(rows, quizTitle, weekNo, activateNow = false) {
+  async adminImportQuizFromRows(rows, quizTitle, monthNo, weekNo, activateNow = false) {
     // Bước 1: Tạo Quiz mới
-    const quizResult = await db.adminCreateQuiz({ title: quizTitle, week_no: weekNo, active: false });
+    const quizResult = await db.adminCreateQuiz({ title: quizTitle, month_no: monthNo, week_no: weekNo, active: false });
     if (!quizResult.success) return quizResult;
 
     const quizId = quizResult.quiz.id;

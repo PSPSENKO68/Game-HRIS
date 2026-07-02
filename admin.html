@@ -137,6 +137,19 @@
               </button>
             </div>
 
+            <!-- Filter Bar for Quizzes -->
+            <div class="flex items-center gap-4 bg-slate-50 p-4 rounded-2xl border border-slate-100 mb-2">
+              <div class="flex items-center gap-2">
+                <label for="filter_quiz_month" class="text-xs font-bold text-slate-600">Tháng:</label>
+                <input type="number" id="filter_quiz_month" class="w-16 p-1.5 bg-white border border-slate-200 rounded-lg text-center text-xs font-bold" placeholder="Tất cả" />
+              </div>
+              <div class="flex items-center gap-2">
+                <label for="filter_quiz_week" class="text-xs font-bold text-slate-600">Tuần:</label>
+                <input type="number" id="filter_quiz_week" class="w-16 p-1.5 bg-white border border-slate-200 rounded-lg text-center text-xs font-bold" placeholder="Tất cả" />
+              </div>
+              <button id="btn_clear_filter" class="px-3 py-1.5 bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold text-[10px] rounded-lg transition uppercase">Xóa bộ lọc</button>
+            </div>
+
             <!-- Current Quizzes Grid -->
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4" id="quizzes_container">
               <!-- Rendered quiz cards dynamically -->
@@ -192,13 +205,17 @@
             </div>
 
             <!-- Quiz details for import (Only visible when Quizzes is selected) -->
-            <div id="quiz_import_details" class="hidden grid grid-cols-1 md:grid-cols-2 gap-4 bg-slate-50 p-4 rounded-2xl border border-slate-100">
+            <div id="quiz_import_details" class="hidden grid grid-cols-1 md:grid-cols-3 gap-4 bg-slate-50 p-4 rounded-2xl border border-slate-100">
               <div>
                 <label for="import_quiz_title" class="block text-xs font-bold text-slate-500 mb-1.5 uppercase">Tên Đề Thi Quiz mới</label>
                 <input type="text" id="import_quiz_title" class="block w-full p-2.5 bg-white border border-slate-200 rounded-xl text-xs font-bold" placeholder="Ví dụ: Quiz Tuần 27 - Quy chuẩn văn hóa" />
               </div>
               <div>
-                <label for="import_quiz_week" class="block text-xs font-bold text-slate-500 mb-1.5 uppercase">Đề thi của Tuần số</label>
+                <label for="import_quiz_month" class="block text-xs font-bold text-slate-500 mb-1.5 uppercase">Tháng</label>
+                <input type="number" id="import_quiz_month" min="1" max="12" class="block w-full p-2.5 bg-white border border-slate-200 rounded-xl text-xs font-bold" placeholder="Ví dụ: 7" />
+              </div>
+              <div>
+                <label for="import_quiz_week" class="block text-xs font-bold text-slate-500 mb-1.5 uppercase">Tuần số</label>
                 <input type="number" id="import_quiz_week" min="1" class="block w-full p-2.5 bg-white border border-slate-200 rounded-xl text-xs font-bold" placeholder="Ví dụ: 27" />
               </div>
             </div>
@@ -311,15 +328,19 @@ Quy trình xin nghỉ phép từ 3 ngày trở lên cần báo trước mấy ng
             <input type="text" id="form_quiz_title" required class="block w-full p-2.5 bg-slate-50 border border-slate-150 rounded-lg text-xs font-bold" placeholder="Ví dụ: Quiz Quy Tắc Vận Hành Khối Sản Xuất" />
           </div>
 
-          <div class="grid grid-cols-2 gap-3">
+          <div class="grid grid-cols-3 gap-3">
             <div>
-              <label for="form_quiz_week" class="block text-xs font-bold text-slate-400 mb-1">Thi đấu tuần số</label>
+              <label for="form_quiz_month" class="block text-xs font-bold text-slate-400 mb-1">Tháng thi đấu</label>
+              <input type="number" id="form_quiz_month" required min="1" max="12" class="block w-full p-2 bg-slate-50 border border-slate-150 rounded-lg text-xs font-bold text-center" placeholder="7" />
+            </div>
+            <div>
+              <label for="form_quiz_week" class="block text-xs font-bold text-slate-400 mb-1">Tuần số</label>
               <input type="number" id="form_quiz_week" required class="block w-full p-2 bg-slate-50 border border-slate-150 rounded-lg text-xs font-bold text-center" placeholder="26" />
             </div>
             <div class="flex flex-col justify-end">
               <div class="flex items-center space-x-2 pb-2">
                 <input type="checkbox" id="form_quiz_active" class="w-4 h-4 rounded border-slate-300 text-indigo-650" />
-                <label for="form_quiz_active" class="text-xs font-semibold text-slate-600">Kích hoạt ngay</label>
+                <label for="form_quiz_active" class="text-[11px] font-semibold text-slate-600">Kích hoạt</label>
               </div>
             </div>
           </div>

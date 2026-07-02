@@ -49,6 +49,21 @@ document.addEventListener('DOMContentLoaded', async () => {
   const formQuizActive = document.getElementById('form_quiz_active');
   const btnOpenQuizModal = document.getElementById('btn_open_quiz_modal');
   const btnCloseQuizModal = document.getElementById('btn_close_quiz_modal');
+  
+  // Filter Bar Elements
+  const filterQuizMonth = document.getElementById('filter_quiz_month');
+  const filterQuizWeek = document.getElementById('filter_quiz_week');
+  const btnClearFilter = document.getElementById('btn_clear_filter');
+
+  if (filterQuizMonth) filterQuizMonth.addEventListener('input', fetchAndRenderQuizzes);
+  if (filterQuizWeek) filterQuizWeek.addEventListener('input', fetchAndRenderQuizzes);
+  if (btnClearFilter) {
+    btnClearFilter.addEventListener('click', () => {
+      if (filterQuizMonth) filterQuizMonth.value = '';
+      if (filterQuizWeek) filterQuizWeek.value = '';
+      fetchAndRenderQuizzes();
+    });
+  }
 
   // Quiz Questions View
   const quizQuestionsBox = document.getElementById('quiz_questions_box');
@@ -306,11 +321,23 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (!quizzesContainer) return;
     quizzesContainer.innerHTML = '<p class="text-slate-400 p-4">Đang tải đề kiểm tra...</p>';
 
-    const qList = await db.adminGetQuizzes();
+    let qList = await db.adminGetQuizzes();
+
+    // Filter logic
+    const filterMonth = document.getElementById('filter_quiz_month')?.value;
+    const filterWeek = document.getElementById('filter_quiz_week')?.value;
+
+    if (filterMonth) {
+      qList = qList.filter(q => q.month_no == filterMonth);
+    }
+    if (filterWeek) {
+      qList = qList.filter(q => q.week_no == filterWeek);
+    }
+
     quizzesContainer.innerHTML = '';
 
     if (!qList || qList.length === 0) {
-      quizzesContainer.innerHTML = '<p class="text-slate-400 col-span-2 p-4 italic">Chưa có đề thi nào. Import từ Excel hoặc tạo mới.</p>';
+      quizzesContainer.innerHTML = '<p class="text-slate-400 col-span-2 p-4 italic">Chưa có đề thi nào (hoặc không khớp với bộ lọc). Import từ Excel hoặc tạo mới.</p>';
       return;
     }
 
@@ -324,7 +351,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           <div class="flex items-center justify-between mb-3.5">
             <span class="inline-flex px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider ${
               q.active ? 'bg-amber-400 text-slate-900' : 'bg-slate-100 text-slate-500 border border-slate-200'
-            }">Tuần ${q.week_no}</span>
+            }">Tháng ${q.month_no || 1} • Tuần ${q.week_no}</span>
             <div class="flex items-center space-x-1.5 text-xs font-bold">
               <input type="checkbox" class="quiz-toggle-active-chk cursor-pointer w-4 h-4 rounded" data-id="${q.id}" ${q.active ? 'checked' : ''} />
               <span>Kích hoạt</span>
@@ -472,6 +499,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       e.preventDefault();
       const result = await db.adminCreateQuiz({
         title: formQuizTitle.value.trim(),
+        month_no: parseInt(document.getElementById('form_quiz_month')?.value || '1'),
         week_no: parseInt(formQuizWeek.value) || 1,
         active: formQuizActive.checked
       });

@@ -67,7 +67,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Active quiz metadata elements
   const activeQuiz = await db.getActiveQuiz();
   if (activeQuiz && quizWeekBadge) {
-    quizWeekBadge.textContent = `Quiz Tuần ${activeQuiz.week_no || 'Này'}`;
+    quizWeekBadge.textContent = `Tháng ${activeQuiz.month_no || 1} • Tuần ${activeQuiz.week_no || 'Này'}`;
   }
 
   // Fetch questions
