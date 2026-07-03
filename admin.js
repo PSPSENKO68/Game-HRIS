@@ -903,11 +903,53 @@ document.addEventListener('DOMContentLoaded', async () => {
   if (btnRefreshHistory) btnRefreshHistory.addEventListener('click', fetchAndRenderHistory);
   if (btnCloseWrongAnswers) btnCloseWrongAnswers.addEventListener('click', () => modalWrongAnswers.classList.add('hidden'));
 
+  // History Filter Inputs
+  const filterHistorySearch = document.getElementById('filter_history_search');
+  const filterHistoryMonth = document.getElementById('filter_history_month');
+  const filterHistoryWeek = document.getElementById('filter_history_week');
+  const btnClearHistoryFilter = document.getElementById('btn_clear_history_filter');
+
+  const triggerHistoryFilter = () => fetchAndRenderHistory();
+
+  if (filterHistorySearch) filterHistorySearch.addEventListener('input', triggerHistoryFilter);
+  if (filterHistoryMonth) filterHistoryMonth.addEventListener('input', triggerHistoryFilter);
+  if (filterHistoryWeek) filterHistoryWeek.addEventListener('input', triggerHistoryFilter);
+  
+  if (btnClearHistoryFilter) {
+    btnClearHistoryFilter.addEventListener('click', () => {
+      if(filterHistorySearch) filterHistorySearch.value = '';
+      if(filterHistoryMonth) filterHistoryMonth.value = '';
+      if(filterHistoryWeek) filterHistoryWeek.value = '';
+      fetchAndRenderHistory();
+    });
+  }
+
   async function fetchAndRenderHistory() {
     if (!historyTableBody) return;
     historyTableBody.innerHTML = '<tr><td colspan="7" class="py-4 text-center text-slate-400 italic">Đang tải lịch sử...</td></tr>';
     
-    const historyData = await db.adminGetPlayHistory();
+    let historyData = await db.adminGetPlayHistory();
+    
+    // Apply filters
+    const searchVal = filterHistorySearch?.value.toLowerCase().trim() || '';
+    const monthVal = filterHistoryMonth?.value;
+    const weekVal = filterHistoryWeek?.value;
+
+    if (searchVal) {
+      historyData = historyData.filter(row => {
+        const name = row.users?.full_name?.toLowerCase() || '';
+        const code = row.users?.employee_code?.toLowerCase() || '';
+        return name.includes(searchVal) || code.includes(searchVal);
+      });
+    }
+    
+    if (monthVal) {
+      historyData = historyData.filter(row => row.quizzes?.month_no == monthVal);
+    }
+    if (weekVal) {
+      historyData = historyData.filter(row => row.quizzes?.week_no == weekVal);
+    }
+
     if (historyData.length === 0) {
       historyTableBody.innerHTML = '<tr><td colspan="7" class="py-4 text-center text-slate-400 italic">Chưa có lượt chơi nào.</td></tr>';
       return;
