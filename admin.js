@@ -978,7 +978,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         </td>
         <td class="py-3 px-4 text-center text-slate-500 font-semibold">${row.time_spent || 0}s</td>
         <td class="py-3 px-4 text-center">
-          <button class="btn-view-wrong px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-lg text-[10px] font-bold transition cursor-pointer" data-wrong='${JSON.stringify(row.wrong_answers || []).replace(/'/g, "&#39;")}'>Chi tiết sai</button>
+          <button class="btn-view-wrong px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-lg text-[10px] font-bold transition cursor-pointer" data-wrong='${JSON.stringify(row.wrong_answers || []).replace(/'/g, "&#39;")}'>Chi tiết</button>
         </td>
       `;
       historyTableBody.appendChild(tr);
