@@ -47,12 +47,16 @@ document.addEventListener('DOMContentLoaded', async () => {
       const rankBadge = document.getElementById('rank_badge');
       if (rankBadge) {
         const rank = await db.getUserRank(user.id);
-        rankBadge.textContent = `Hạng #${rank}`;
-        
-        // Kích hoạt animation nảy lên
-        setTimeout(() => {
-          rankBadge.classList.add('rank-animate');
-        }, 300);
+        if (rank) {
+          rankBadge.textContent = `Hạng #${rank}`;
+          // Kích hoạt animation nảy lên
+          setTimeout(() => {
+            rankBadge.classList.add('rank-animate');
+          }, 300);
+        } else {
+          // Chưa có điểm → ẩn badge hạng
+          rankBadge.style.display = 'none';
+        }
       }
     } catch (_) {
       totalScoreDisplay.textContent = '—';

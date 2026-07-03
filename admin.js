@@ -654,9 +654,42 @@ document.addEventListener('DOMContentLoaded', async () => {
 
       try {
         if (type === 'users') {
-          const result = await db.adminImportUsersFromRows(rows, false);
-          showAdminAlert('Kết quả Import ✅', `Tạo mới: ${result.created} | Cập nhật: ${result.updated} | Bỏ qua: ${result.skipped}`);
-          fetchAndRenderUsers();
+          // BƯỚC 1: Kiểm tra trùng lặp trước
+          btnProcessImport.textContent = '⏳ Đang kiểm tra...';
+          const checkResult = await db.adminImportUsersFromRows(rows, 'check');
+
+          if (checkResult.duplicates && checkResult.duplicates.length > 0) {
+            // Có trùng → hiển thị danh sách và hỏi xác nhận
+            const dupList = checkResult.duplicates.map(d =>
+              `• <strong>${d.employee_code}</strong> — ${d.full_name} (${d.department || '—'})`
+            ).join('<br>');
+
+            const confirmed = await showImportConfirmDialog(
+              checkResult.duplicates.length,
+              checkResult.newCount,
+              dupList
+            );
+
+            if (confirmed === 'update') {
+              // Cập nhật cả trùng + tạo mới
+              const updateResult = await db.adminImportUsersFromRows(rows, 'update');
+              showAdminAlert('Import hoàn tất ✅',
+                `Tạo mới: ${updateResult.created} | Cập nhật: ${updateResult.updated}`);
+              fetchAndRenderUsers();
+            } else if (confirmed === 'new_only') {
+              // Chỉ tạo mới, bỏ qua trùng
+              const createResult = await db.adminImportUsersFromRows(rows, 'create');
+              showAdminAlert('Import hoàn tất ✅',
+                `Tạo mới: ${createResult.created} tài khoản. Đã bỏ qua ${checkResult.duplicates.length} tài khoản trùng.`);
+              fetchAndRenderUsers();
+            }
+            // Nếu cancelled: không làm gì
+          } else {
+            // Không có trùng → tạo mới luôn
+            const createResult = await db.adminImportUsersFromRows(rows, 'create');
+            showAdminAlert('Import thành công ✅', `Đã tạo mới ${createResult.created} tài khoản.`);
+            fetchAndRenderUsers();
+          }
         } else {
           // Quiz import — cần title và week
           const quizTitle = document.getElementById('import_quiz_title')?.value.trim();
@@ -684,6 +717,54 @@ document.addEventListener('DOMContentLoaded', async () => {
         btnProcessImport.disabled = false;
         btnProcessImport.textContent = 'XỬ LÝ IMPORT DỮ LIỆU NGAY';
       }
+    });
+  }
+
+  // Helper: hiển thị dialog xác nhận khi có trùng lặp
+  function showImportConfirmDialog(dupCount, newCount, dupListHtml) {
+    return new Promise((resolve) => {
+      // Tạo modal overlay
+      const overlay = document.createElement('div');
+      overlay.style.cssText = 'position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(4px)';
+
+      overlay.innerHTML = `
+        <div style="background:#fff;border-radius:20px;padding:24px;max-width:480px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,0.2);max-height:80vh;display:flex;flex-direction:column;">
+          <h3 style="font-size:16px;font-weight:900;color:#1e293b;margin:0 0 8px">⚠️ Phát hiện Tài Khoản Trùng</h3>
+          <p style="font-size:12px;color:#64748b;margin:0 0 12px">
+            Tìm thấy <strong style="color:#E07242">${dupCount} tài khoản đã tồn tại</strong> và <strong style="color:#10b981">${newCount} tài khoản mới</strong>. Hãy chọn cách xử lý:
+          </p>
+          <div style="background:#fef3c7;border:1px solid #fcd34d;border-radius:10px;padding:12px;font-size:11px;line-height:1.8;max-height:200px;overflow-y:auto;margin-bottom:16px;color:#1e293b">
+            <strong style="display:block;margin-bottom:4px">Danh sách trùng:</strong>
+            ${dupListHtml}
+          </div>
+          <div style="display:flex;gap:8px;flex-direction:column">
+            <button id="import_confirm_update" style="background:linear-gradient(135deg,#E07242,#E5853F);color:#fff;font-weight:800;padding:12px;border-radius:12px;border:none;cursor:pointer;font-size:12px">
+              ✅ Cập nhật TÀI KHOẢN TRÙNG + Tạo mới tài khoản còn lại
+            </button>
+            <button id="import_confirm_new_only" style="background:#f1f5f9;color:#334155;font-weight:700;padding:10px;border-radius:12px;border:1px solid #e2e8f0;cursor:pointer;font-size:12px">
+              ➕ Chỉ tạo ${newCount} tài khoản mới, bỏ qua trùng
+            </button>
+            <button id="import_confirm_cancel" style="background:transparent;color:#94a3b8;font-weight:600;padding:8px;border-radius:12px;border:none;cursor:pointer;font-size:11px">
+              Hủy — Không làm gì
+            </button>
+          </div>
+        </div>
+      `;
+
+      document.body.appendChild(overlay);
+
+      overlay.querySelector('#import_confirm_update').addEventListener('click', () => {
+        document.body.removeChild(overlay);
+        resolve('update');
+      });
+      overlay.querySelector('#import_confirm_new_only').addEventListener('click', () => {
+        document.body.removeChild(overlay);
+        resolve('new_only');
+      });
+      overlay.querySelector('#import_confirm_cancel').addEventListener('click', () => {
+        document.body.removeChild(overlay);
+        resolve('cancel');
+      });
     });
   }
 

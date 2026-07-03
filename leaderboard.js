@@ -49,15 +49,21 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Hiển thị badge rank cá nhân
     if (currentUser && selfRankRow) {
-      selfRankNum.textContent = `#${currentUserRank}`;
       selfName.textContent = currentUser.full_name;
       selfDept.textContent = currentUser.department;
       selfScore.textContent = `${currentUserScore}đ`;
+      if (currentUserRank && currentUserRank > 0) {
+        selfRankNum.textContent = `#${currentUserRank}`;
+      } else {
+        selfRankNum.textContent = `--`; // Chưa có điểm, chưa có hạng
+      }
       selfRankRow.classList.remove('hidden');
     }
 
-    // Render danh sách
-    rankings.forEach((player, index) => {
+    // Render danh sách - chỉ hiển thị người có điểm > 0
+    const playersWithScore = rankings.filter(p => (p.total_score || 0) > 0);
+    let rankCounter = 1;
+    playersWithScore.forEach((player, index) => {
       const rank = index + 1;
       const isSelf = currentUser && (player.id === currentUser.id);
 
@@ -99,6 +105,11 @@ document.addEventListener('DOMContentLoaded', async () => {
       `;
       leaderboardList.appendChild(row);
     });
+    
+    // Nếu không có ai có điểm
+    if (playersWithScore.length === 0) {
+      leaderboardList.innerHTML = `<div class="py-12 text-center text-[#877A6E] text-xs font-semibold">Chưa có người chơi nào có điểm. Hãy là người đầu tiên!</div>`;
+    }
 
   } catch (error) {
     console.error('Leaderboard error:', error);

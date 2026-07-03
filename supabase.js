@@ -262,11 +262,19 @@ export const db = {
       .select('id, total_score')
       .eq('is_active', true)
       .neq('role', 'owner')
+      .gt('total_score', 0)  // Chỉ xếp hạng người có điểm > 0
       .order('total_score', { ascending: false });
 
     if (!data) return null;
+    
+    // Kiểm tra user có trong danh sách rank không (phải có điểm > 0)
     const rank = data.findIndex(u => u.id === userId);
-    return rank >= 0 ? rank + 1 : null;
+    if (rank < 0) return null; // Không có hạng (chưa có điểm)
+    
+    // Xử lý đồng hạng: người đồng điểm có cùng hạng
+    const myScore = data[rank].total_score;
+    const firstWithSameScore = data.findIndex(u => u.total_score === myScore);
+    return firstWithSameScore + 1;
   },
 
   // ── 6. ADMIN: DASHBOARD ─────────────────────────────────────────────────
@@ -567,13 +575,16 @@ export const db = {
     return { success: true };
   },
 
-  // ── 11. ADMIN: IMPORT USERS TỪ CSV/XLSX ────────────────────────────────
-  async adminImportUsersFromRows(rows, overwrite = false) {
-    let created = 0, updated = 0, skipped = 0;
+  // ── 11. ADMIN: IMPORT USERS TỪ CSV/XLSX ─────────────────────────
+  // phase: 'check' | 'create' | 'update'
+  async adminImportUsersFromRows(rows, phase = 'check') {
+    let created = 0, updated = 0;
+    const duplicates = []; // danh sách tài khoản bị trùng
+    const newRows = []; // dòng chưa tồn tại
 
     for (const row of rows) {
       const employeeCode = (row.employee_code || '').toString().trim();
-      if (!employeeCode) { skipped++; continue; }
+      if (!employeeCode) continue;
 
       const userData = {
         employee_code: employeeCode,
@@ -583,68 +594,72 @@ export const db = {
         role: (row.role || 'user').trim(),
         is_active: row.is_active !== undefined ? row.is_active.toString() === 'true' : true,
         max_plays: (row.max_plays !== undefined && row.max_plays !== '') ? parseInt(row.max_plays) : null,
-        total_score: 0
       };
 
       const { data: existing } = await supabase
         .from('users')
-        .select('id, total_score')
+        .select('id, full_name, employee_code')
         .eq('employee_code', employeeCode)
         .single();
 
       if (existing) {
-        if (overwrite) {
-          await supabase.from('users').update({
-            full_name: userData.full_name,
-            department: userData.department,
-            pin: userData.pin,
-            role: userData.role,
-            is_active: userData.is_active,
-            max_plays: userData.max_plays
-          }).eq('id', existing.id);
-          updated++;
-        } else {
-          skipped++;
-        }
+        duplicates.push({ ...userData, existingId: existing.id });
       } else {
+        newRows.push(userData);
+      }
+    }
+
+    // Phase 'check': chỉ trả về danh sách trùng — chưa đụng DB
+    if (phase === 'check') {
+      return { success: true, duplicates, newCount: newRows.length };
+    }
+
+    // Phase 'create': chỉ tạo những tài khoản mới (không trùng)
+    if (phase === 'create') {
+      for (const userData of newRows) {
         const newUser = {
           id: genId('u'),
           ...userData,
+          total_score: 0,
           created_at: new Date().toISOString()
         };
         const { error } = await supabase.from('users').insert(newUser);
         if (!error) created++;
-        else { console.error('Import user error:', error); skipped++; }
+        else console.error('Import user error:', error);
       }
+      return { success: true, created, updated: 0 };
     }
 
-    return { success: true, created, updated, skipped };
-  },
-
-  // ── 12. GET USER RANK ──────────────────────────────────────────────────────
-  async getUserRank(userId) {
-    const { data: users, error } = await supabase
-      .from('users')
-      .select('id, total_score, role')
-      .neq('role', 'owner')
-      .order('total_score', { ascending: false });
-      
-    if (error || !users) return '-';
-    
-    // Tìm vị trí rank, người đồng điểm có cùng hạng
-    let currentRank = 1;
-    let prevScore = -1;
-    
-    for (let i = 0; i < users.length; i++) {
-      if (prevScore !== -1 && users[i].total_score < prevScore) {
-        currentRank = i + 1;
+    // Phase 'update': tạo mới và cập nhật cả trùng
+    if (phase === 'update') {
+      // Tạo mới
+      for (const userData of newRows) {
+        const newUser = {
+          id: genId('u'),
+          ...userData,
+          total_score: 0,
+          created_at: new Date().toISOString()
+        };
+        const { error } = await supabase.from('users').insert(newUser);
+        if (!error) created++;
+        else console.error('Import user error:', error);
       }
-      if (users[i].id === userId) {
-        return currentRank;
+      // Cập nhật trùng
+      for (const userData of duplicates) {
+        await supabase.from('users').update({
+          full_name: userData.full_name,
+          department: userData.department,
+          pin: userData.pin,
+          role: userData.role,
+          is_active: userData.is_active,
+          max_plays: userData.max_plays
+        }).eq('id', userData.existingId);
+        updated++;
       }
-      prevScore = users[i].total_score;
+      return { success: true, created, updated };
     }
-    return '-';
+
+    return { success: false, message: 'Phase không hợp lệ' };
   },
 
   // ── 13. EXPORT BÁO CÁO ĐIỂM SỐ (XLSX) ──────────────────────────────────

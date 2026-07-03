@@ -51,9 +51,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     if (userRank) {
       db.getUserRank(user.id).then(rank => {
-        userRank.textContent = `#${rank}`;
+        userRank.textContent = rank ? `#${rank}` : `--`; // null = chưa có điểm
       }).catch(() => {
-        userRank.textContent = `#--`;
+        userRank.textContent = `--`;
       });
     }
 
