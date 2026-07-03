@@ -622,8 +622,18 @@ document.addEventListener('DOMContentLoaded', async () => {
           const ws = wb.Sheets[wb.SheetNames[0]];
           importedFileRows = window.XLSX.utils.sheet_to_json(ws, { defval: '' });
         } else {
-          const text = await file.text();
+          // Đọc file CSV với xử lý encoding thông minh
+          // Thử UTF-8 trước, nếu phát hiện ký tự lỗi thì thử windows-1252 (ANSI — Excel VN hay dùng)
+          const buf = await file.arrayBuffer();
+          let text = new TextDecoder('utf-8').decode(buf);
+          
+          // Kiểm tra nếu có ký tự thay thế (U+FFFD) hoặc ký tự lạ → thử lại với ANSI
+          if (text.includes('\uFFFD') || /[\x80-\x9F]/.test(text)) {
+            text = new TextDecoder('windows-1252').decode(buf);
+          }
+          
           importedFileRows = parseCSV(text);
+
         }
         csvTextareaInput.value = '';
         showAdminAlert('File đã sẵn sàng 📄', `Đã đọc ${importedFileRows.length} dòng từ "${file.name}". Bấm "XỬ LÝ IMPORT" để tiếp tục.`);
