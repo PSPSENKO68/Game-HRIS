@@ -95,6 +95,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   const btnCloseAdminAlert = document.getElementById('btn_close_admin_alert');
 
   let currentExpandedQuizId = null;
+  let currentExpandedQuizMonth = null;
+  let currentExpandedQuizWeek = null;
+  let currentExpandedQuizTitle = null;
 
   // ── Connection badge ─────────────────────────────────────────────────────────
   if (adminDbMode) {
@@ -362,7 +365,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         <div class="flex items-center justify-between pt-4 border-t ${q.active ? 'border-white/10' : 'border-slate-100'}">
           <button class="view-q-questions-btn px-3 py-1.5 border hover:opacity-90 active:scale-95 text-[10px] font-bold rounded-xl transition cursor-pointer ${
             q.active ? 'bg-white/15 text-white border-white/20 hover:bg-white/25' : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
-          }" data-id="${q.id}" data-title="${q.title}" data-week="${q.week_no}">🔍 Xem câu hỏi</button>
+          }" data-id="${q.id}" data-title="${q.title}" data-week="${q.week_no}" data-month="${q.month_no || 1}">✏️ Chỉnh sửa</button>
           <button class="delete-quiz-btn px-2 py-1.5 text-[10px] font-bold rounded-xl hover:opacity-90 active:scale-95 transition flex items-center gap-1 cursor-pointer ${
             q.active ? 'bg-rose-500/20 text-rose-200 border border-rose-500/30' : 'bg-rose-50 text-rose-600 border border-rose-200'
           }" data-id="${q.id}">🗑️ Xóa đề</button>
@@ -384,7 +387,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         const qId = btn.getAttribute('data-id');
         const title = btn.getAttribute('data-title');
         const week = btn.getAttribute('data-week');
-        showQuizQuestions(qId, title, week);
+        const month = btn.getAttribute('data-month');
+        showQuizQuestions(qId, title, week, month);
       });
     });
 
@@ -402,9 +406,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   }
 
-  async function showQuizQuestions(quizId, title, weekLabel) {
+  async function showQuizQuestions(quizId, title, weekLabel, monthLabel) {
     currentExpandedQuizId = quizId;
-    if (selectedQuizSubtitle) selectedQuizSubtitle.textContent = `QUIZ • Tuần ${weekLabel}`;
+    currentExpandedQuizMonth = monthLabel;
+    currentExpandedQuizWeek = weekLabel;
+    currentExpandedQuizTitle = title;
+    if (selectedQuizSubtitle) selectedQuizSubtitle.textContent = `Tháng ${monthLabel} • Tuần ${weekLabel}`;
     if (selectedQuizTitle) selectedQuizTitle.textContent = title;
     if (quizQuestionsBox) quizQuestionsBox.classList.remove('hidden');
     if (questionsListWrapper) questionsListWrapper.innerHTML = '<p class="text-slate-400 text-sm">Đang tải câu hỏi...</p>';
@@ -443,7 +450,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       btn.addEventListener('click', async () => {
         if (confirm('Xóa câu hỏi này?')) {
           await db.adminDeleteQuestion(btn.getAttribute('data-id'));
-          showQuizQuestions(quizId, title, weekLabel);
+          showQuizQuestions(quizId, title, weekLabel, monthLabel);
         }
       });
     });
@@ -483,7 +490,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   }
 
-  // Quiz Modal: Open
   if (btnOpenQuizModal) {
     btnOpenQuizModal.addEventListener('click', () => {
       formQuiz.reset();
@@ -492,6 +498,45 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
   if (btnCloseQuizModal) {
     btnCloseQuizModal.addEventListener('click', () => modalQuiz.classList.add('hidden'));
+  }
+
+  // Quiz Modal: Edit
+  const btnEditQuizInfo = document.getElementById('btn_edit_quiz_info');
+  const modalEditQuiz = document.getElementById('modal_edit_quiz');
+  const formEditQuiz = document.getElementById('form_edit_quiz');
+  const btnCloseEditQuizModal = document.getElementById('btn_close_edit_quiz_modal');
+  
+  if (btnEditQuizInfo) {
+    btnEditQuizInfo.addEventListener('click', () => {
+      document.getElementById('form_edit_quiz_id').value = currentExpandedQuizId;
+      document.getElementById('form_edit_quiz_title').value = currentExpandedQuizTitle;
+      document.getElementById('form_edit_quiz_month').value = currentExpandedQuizMonth;
+      document.getElementById('form_edit_quiz_week').value = currentExpandedQuizWeek;
+      modalEditQuiz.classList.remove('hidden');
+    });
+  }
+  
+  if (btnCloseEditQuizModal) {
+    btnCloseEditQuizModal.addEventListener('click', () => modalEditQuiz.classList.add('hidden'));
+  }
+
+  if (formEditQuiz) {
+    formEditQuiz.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const qId = document.getElementById('form_edit_quiz_id').value;
+      const title = document.getElementById('form_edit_quiz_title').value.trim();
+      const month = parseInt(document.getElementById('form_edit_quiz_month').value) || 1;
+      const week = parseInt(document.getElementById('form_edit_quiz_week').value) || 1;
+      
+      const result = await db.adminUpdateQuiz(qId, { title, month_no: month, week_no: week });
+      if (result.success) {
+        modalEditQuiz.classList.add('hidden');
+        fetchAndRenderQuizzes();
+        showQuizQuestions(qId, title, week, month);
+      } else {
+        alert('Lỗi cập nhật đề thi: ' + result.message);
+      }
+    });
   }
 
   if (formQuiz) {

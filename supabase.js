@@ -405,6 +405,17 @@ export const db = {
     return { success: true, quiz: newQuiz };
   },
 
+  async adminUpdateQuiz(quizId, updates) {
+    const { error } = await supabase.from('quizzes').update({
+      title: updates.title,
+      month_no: updates.month_no,
+      week_no: updates.week_no
+    }).eq('id', quizId);
+    if (error) return { success: false, message: error.message };
+    return { success: true };
+  },
+
+
   async adminToggleQuizActive(quizId, isActive) {
     // Nếu kích hoạt, tắt các quiz khác trước
     if (isActive) {
