@@ -20,10 +20,12 @@ document.addEventListener('DOMContentLoaded', async () => {
   // ── DOM Elements ────────────────────────────────────────────────────────────
   const tabUsersBtn = document.getElementById('tab_users_btn');
   const tabQuizzesBtn = document.getElementById('tab_quizzes_btn');
+  const tabHistoryBtn = document.getElementById('tab_history_btn');
   const tabImportBtn = document.getElementById('tab_import_btn');
   const adminDbMode = document.getElementById('admin_db_mode');
   const sectionUsers = document.getElementById('section_users');
   const sectionQuizzes = document.getElementById('section_quizzes');
+  const sectionHistory = document.getElementById('section_history');
   const sectionImport = document.getElementById('section_import');
 
   // User Modal
@@ -117,16 +119,17 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   // ── TAB ROUTING ──────────────────────────────────────────────────────────────
-  const tabs = [
+  const tabConfigs = [
     { btn: tabUsersBtn, section: sectionUsers },
     { btn: tabQuizzesBtn, section: sectionQuizzes },
+    { btn: tabHistoryBtn, section: sectionHistory },
     { btn: tabImportBtn, section: sectionImport }
   ];
 
-  tabs.forEach(tab => {
+  tabConfigs.forEach(tab => {
     if (!tab.btn) return;
     tab.btn.addEventListener('click', () => {
-      tabs.forEach(t => {
+      tabConfigs.forEach(t => {
         if (t.btn) t.btn.removeAttribute('style');
         t.btn.className = 'tab-btn w-full text-left px-4 py-3 rounded-2xl font-bold text-sm text-slate-600 hover:bg-slate-50 transition flex items-center gap-3 cursor-pointer';
         if (t.section) t.section.classList.add('hidden');
@@ -137,6 +140,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (tab.section) tab.section.classList.remove('hidden');
       if (tab.btn === tabUsersBtn) fetchAndRenderUsers();
       if (tab.btn === tabQuizzesBtn) fetchAndRenderQuizzes();
+      if (tab.btn === tabHistoryBtn) fetchAndRenderHistory();
     });
   });
 
@@ -325,8 +329,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     quizzesContainer.innerHTML = '<p class="text-slate-400 p-4">Đang tải đề kiểm tra...</p>';
 
     let qList = await db.adminGetQuizzes();
-
-    // Filter logic
+    const participantCounts = await db.adminGetQuizParticipantCount();
+    
+    // Lọc theo Tháng & Tuần
     const filterMonth = document.getElementById('filter_quiz_month')?.value;
     const filterWeek = document.getElementById('filter_quiz_week')?.value;
 
@@ -360,7 +365,8 @@ document.addEventListener('DOMContentLoaded', async () => {
               <span>Kích hoạt</span>
             </div>
           </div>
-          <h3 class="font-extrabold text-sm mb-4 leading-snug font-['Space_Grotesk']">${q.title}</h3>
+          <h3 class="font-extrabold text-sm leading-snug font-['Space_Grotesk']">${q.title}</h3>
+          <p class="text-[11px] mt-2 font-semibold opacity-80">${participantCounts[q.id] || 0} người tham gia</p>
         </div>
         <div class="flex items-center justify-between pt-4 border-t ${q.active ? 'border-white/10' : 'border-slate-100'}">
           <button class="view-q-questions-btn px-3 py-1.5 border hover:opacity-90 active:scale-95 text-[10px] font-bold rounded-xl transition cursor-pointer ${
@@ -884,6 +890,78 @@ document.addEventListener('DOMContentLoaded', async () => {
       sessionStorage.removeItem('current_user');
       sessionStorage.removeItem('current_quiz_id');
       window.location.replace('/login.html');
+    });
+  }
+
+  // ── 7. HISTORY MANAGEMENT ───────────────────────────────────────────────────
+  const historyTableBody = document.getElementById('history_table_body');
+  const btnRefreshHistory = document.getElementById('btn_refresh_history');
+  const modalWrongAnswers = document.getElementById('modal_wrong_answers');
+  const btnCloseWrongAnswers = document.getElementById('btn_close_wrong_answers');
+  const wrongAnswersList = document.getElementById('wrong_answers_list');
+
+  if (btnRefreshHistory) btnRefreshHistory.addEventListener('click', fetchAndRenderHistory);
+  if (btnCloseWrongAnswers) btnCloseWrongAnswers.addEventListener('click', () => modalWrongAnswers.classList.add('hidden'));
+
+  async function fetchAndRenderHistory() {
+    if (!historyTableBody) return;
+    historyTableBody.innerHTML = '<tr><td colspan="7" class="py-4 text-center text-slate-400 italic">Đang tải lịch sử...</td></tr>';
+    
+    const historyData = await db.adminGetPlayHistory();
+    if (historyData.length === 0) {
+      historyTableBody.innerHTML = '<tr><td colspan="7" class="py-4 text-center text-slate-400 italic">Chưa có lượt chơi nào.</td></tr>';
+      return;
+    }
+
+    historyTableBody.innerHTML = '';
+    historyData.forEach(row => {
+      const tr = document.createElement('tr');
+      const playedDate = new Date(row.played_at).toLocaleString('vi-VN');
+      const userName = row.users ? row.users.full_name : 'N/A';
+      const userCode = row.users ? row.users.employee_code : '';
+      const quizTitle = row.quizzes ? row.quizzes.title : 'Quiz';
+      
+      tr.innerHTML = `
+        <td class="py-3 px-4 font-semibold">${playedDate}</td>
+        <td class="py-3 px-4">
+          <p class="font-bold text-slate-900">${userName}</p>
+          <p class="text-[10px] text-slate-400">${userCode}</p>
+        </td>
+        <td class="py-3 px-4 font-bold text-indigo-700">${quizTitle}</td>
+        <td class="py-3 px-4 text-center font-black text-amber-500">${row.score}</td>
+        <td class="py-3 px-4 text-center">
+          <span class="text-emerald-600 font-bold">${row.correct_count || 0}</span>
+          <span class="text-slate-300 mx-1">/</span>
+          <span class="text-rose-500 font-bold">${row.wrong_count || 0}</span>
+        </td>
+        <td class="py-3 px-4 text-center text-slate-500 font-semibold">${row.time_spent || 0}s</td>
+        <td class="py-3 px-4 text-center">
+          <button class="btn-view-wrong px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-lg text-[10px] font-bold transition cursor-pointer" data-wrong='${JSON.stringify(row.wrong_answers || []).replace(/'/g, "&#39;")}'>Chi tiết sai</button>
+        </td>
+      `;
+      historyTableBody.appendChild(tr);
+    });
+
+    document.querySelectorAll('.btn-view-wrong').forEach(btn => {
+      btn.addEventListener('click', () => {
+        let wrongArr = [];
+        try { wrongArr = JSON.parse(btn.getAttribute('data-wrong') || '[]'); } catch(e) {}
+        
+        if (wrongArr.length === 0) {
+          wrongAnswersList.innerHTML = '<p class="text-emerald-600 font-bold text-center py-4">Tuyệt vời! Người chơi không sai câu nào.</p>';
+        } else {
+          wrongAnswersList.innerHTML = wrongArr.map((w, idx) => `
+            <div class="p-4 bg-slate-50 rounded-2xl border border-slate-100">
+              <p class="font-bold text-slate-800 mb-2"><span class="text-rose-500 mr-1">Q${idx+1}.</span> ${w.question}</p>
+              <div class="flex flex-col gap-1.5 text-xs">
+                <p class="text-rose-600"><span class="font-bold">Đã chọn:</span> ${w.selected}</p>
+                <p class="text-emerald-600"><span class="font-bold">Đáp án đúng:</span> ${w.correct}</p>
+              </div>
+            </div>
+          `).join('');
+        }
+        modalWrongAnswers.classList.remove('hidden');
+      });
     });
   }
 

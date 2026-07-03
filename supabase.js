@@ -212,13 +212,17 @@ export const db = {
   },
 
   // ── 4. LƯU KẾT QUẢ CHƠI ────────────────────────────────────────────────
-  async savePlayRecord(userId, quizId, score) {
+  async savePlayRecord(userId, quizId, score, correctCount = 0, wrongCount = 0, timeSpent = 0, wrongAnswers = []) {
     const record = {
       id: genId('h'),
       user_id: userId,
       quiz_id: quizId,
       score: parseInt(score) || 0,
-      played_at: new Date().toISOString()
+      played_at: new Date().toISOString(),
+      correct_count: correctCount,
+      wrong_count: wrongCount,
+      time_spent: timeSpent,
+      wrong_answers: wrongAnswers
     };
 
     const { error } = await supabase.from('play_history').insert(record);

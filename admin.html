@@ -33,6 +33,19 @@
           class="inline-flex px-4 py-2 bg-slate-100 text-slate-700 rounded-xl font-bold text-xs hover:bg-slate-200 transition">
           VỀ TRANG CHỦ TRÒ CHƠI
         </a>
+        <div class="flex bg-slate-100 p-1.5 rounded-3xl shadow-inner gap-1">
+          <button id="tab_users_btn"
+            class="flex-1 py-2 px-4 text-center text-xs font-bold text-slate-500 rounded-2xl transition cursor-pointer">👥
+            Người dùng</button>
+          <button id="tab_quizzes_btn"
+            class="flex-1 py-2 px-4 text-center text-xs font-bold text-slate-500 rounded-2xl transition cursor-pointer">📚 Đề
+            thi</button>
+          <button id="tab_history_btn"
+            class="flex-1 py-2 px-4 text-center text-xs font-bold text-slate-500 rounded-2xl transition cursor-pointer">🕒 Lịch sử</button>
+          <button id="tab_import_btn"
+            class="flex-1 py-2 px-4 text-center text-xs font-bold text-slate-500 rounded-2xl transition cursor-pointer">⚡
+            Nhập liệu</button>
+        </div>
         <button id="btn_logout_admin"
           class="px-4 py-2 bg-rose-50 text-rose-600 rounded-xl font-bold text-xs hover:bg-rose-100 transition cursor-pointer">
           Đăng xuất
@@ -310,6 +323,36 @@
             class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-6 rounded-2xl text-xs shadow-md active:scale-95 transition cursor-pointer">
             XỬ LÝ IMPORT DỮ LIỆU NGAY
           </button>
+        </section>
+
+        <!-- VIEWPORT 4: HISTORY -->
+        <section id="section_history" class="admin-view bg-white rounded-3xl border border-slate-200 shadow-sm p-6 hidden">
+          <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 gap-4">
+            <div>
+              <h2 class="text-xl font-bold text-slate-900 font-['Space_Grotesk']">Lịch Sử Thi Đấu</h2>
+              <p class="text-xs text-slate-500 mt-1">Xem chi tiết các lượt chơi của nhân sự</p>
+            </div>
+            <button id="btn_refresh_history" class="px-3 py-2 bg-indigo-50 text-indigo-600 font-bold text-xs rounded-xl hover:bg-indigo-100 transition cursor-pointer">🔄 Làm mới</button>
+          </div>
+          
+          <div class="overflow-x-auto border border-slate-100 rounded-2xl">
+            <table class="w-full text-left text-xs">
+              <thead class="bg-slate-50 border-b border-slate-100">
+                <tr>
+                  <th class="py-3 px-4 font-bold text-slate-500">Thời gian</th>
+                  <th class="py-3 px-4 font-bold text-slate-500">Người chơi</th>
+                  <th class="py-3 px-4 font-bold text-slate-500">Đề thi</th>
+                  <th class="py-3 px-4 font-bold text-slate-500 text-center">Điểm</th>
+                  <th class="py-3 px-4 font-bold text-slate-500 text-center">Đúng/Sai</th>
+                  <th class="py-3 px-4 font-bold text-slate-500 text-center">TG</th>
+                  <th class="py-3 px-4 font-bold text-slate-500 text-center">Chi tiết</th>
+                </tr>
+              </thead>
+              <tbody id="history_table_body" class="divide-y divide-slate-100">
+                <!-- Rows injected dynamically -->
+              </tbody>
+            </table>
+          </div>
         </section>
 
       </div>
@@ -651,6 +694,19 @@
   </div>
 
   <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
+  <!-- FLOATING MODAL 4: WRONG ANSWERS DETAIL -->
+  <div id="modal_wrong_answers" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
+    <div class="bg-white rounded-3xl p-6 max-w-lg w-full shadow-2xl border border-slate-100 overflow-y-auto max-h-[80vh]">
+      <div class="flex justify-between items-center mb-4 border-b border-slate-100 pb-3">
+        <h3 class="text-base font-bold text-slate-900">Chi Tiết Các Câu Trả Lời Sai</h3>
+        <button id="btn_close_wrong_answers" class="text-slate-400 hover:text-slate-600 font-bold p-2 cursor-pointer">✕</button>
+      </div>
+      <div id="wrong_answers_list" class="space-y-4">
+        <!-- Injected dynamically -->
+      </div>
+    </div>
+  </div>
+
   <script type="module" src="/admin.js"></script>
 </body>
 

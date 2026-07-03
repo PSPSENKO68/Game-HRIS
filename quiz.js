@@ -58,6 +58,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   let correctCount = 0;
   let hasSelected = false;
   
+  let totalTimeSpent = 0;
+  let wrongAnswersDetails = [];
+  
   // Timer state
   let timerInterval = null;
   let currentRemainingTime = 0;
@@ -208,6 +211,8 @@ document.addEventListener('DOMContentLoaded', async () => {
       // Speed Bonus Logic
       let bonusEarned = 0;
       const timeSpent = currentMaxTime - currentRemainingTime;
+      totalTimeSpent += (timeSpent > 0 ? timeSpent : 0);
+
       if (timeSpent <= currentMaxTime / 3) {
         bonusEarned = Math.round(basePoint * 0.5); // Tier 1 (50%)
       } else if (timeSpent <= (currentMaxTime * 2) / 3) {
@@ -239,12 +244,36 @@ document.addEventListener('DOMContentLoaded', async () => {
       feedbackSub.textContent = `+${basePoint} Điểm${bonusEarned > 0 ? ` (+${bonusEarned}đ Thưởng Tốc Độ)` : ''}`;
     } else {
       // Incorrect flow
+      let selectedText = "";
+      const timeSpent = currentMaxTime - currentRemainingTime;
+      totalTimeSpent += (timeSpent > 0 ? timeSpent : 0);
+
       if (selectedButton) {
         selectedButton.classList.add('opacity-40', 'ring-4', 'ring-rose-400');
         feedbackTitle.textContent = "SAI MẤT RỒI! 😢";
+        
+        Object.keys(optButtons).forEach(key => {
+          if (optButtons[key].btn === selectedButton) {
+            selectedText = optButtons[key].label.textContent;
+          }
+        });
       } else {
         feedbackTitle.textContent = "HẾT GIỜ! ⏰";
+        selectedText = "Không trả lời";
       }
+
+      let correctText = "";
+      Object.keys(optButtons).forEach(key => {
+        if (optButtons[key].btn.getAttribute('data-correct') === 'true') {
+          correctText = optButtons[key].label.textContent;
+        }
+      });
+
+      wrongAnswersDetails.push({
+        question: currentQuestion.question_text,
+        selected: selectedText,
+        correct: correctText
+      });
 
       // Style feedback banner red error
       feedbackBanner.className = "mb-6 p-4 rounded-3xl bg-rose-600 text-white flex items-center justify-between shadow-lg animate-shake";
@@ -290,7 +319,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
       try {
         // Save results to Database
-        await db.savePlayRecord(user.id, quizId, totalQuizScore + earnedBonus);
+        const wrongCount = questions.length - correctCount;
+        await db.savePlayRecord(user.id, quizId, totalQuizScore + earnedBonus, correctCount, wrongCount, totalTimeSpent, wrongAnswersDetails);
 
         // Save session items so results page can display them elegantly
         sessionStorage.setItem('last_quiz_score', totalQuizScore);
