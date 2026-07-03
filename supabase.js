@@ -712,5 +712,45 @@ export const db = {
 
     const periodLabel = period === 'week' ? 'Tuan' : period === 'month' ? 'Thang' : period === 'quarter' ? 'Quy' : 'ToanPhan';
     window.XLSX.writeFile(wb, `BaoCaoDiem_${periodLabel}_${new Date().toISOString().slice(0, 10)}.xlsx`);
+  },
+
+  // ── 10. ADMIN: LỊCH SỬ THI ĐẤU VÀ THỐNG KÊ ──────────────────────────────
+  async adminGetPlayHistory() {
+    const { data, error } = await supabase
+      .from('play_history')
+      .select(`
+        *,
+        users ( full_name, employee_code, department ),
+        quizzes ( title, month_no, week_no )
+      `)
+      .order('played_at', { ascending: false });
+    if (error) {
+      console.error('adminGetPlayHistory error:', error);
+      return [];
+    }
+    return data || [];
+  },
+
+  async adminGetQuizParticipantCount() {
+    // Gom nhóm user_id duy nhất cho mỗi bộ đề
+    const { data, error } = await supabase
+      .from('play_history')
+      .select('quiz_id, user_id');
+      
+    if (error) return {};
+
+    const counts = {};
+    const seen = {}; 
+    
+    (data || []).forEach(row => {
+      if (!seen[row.quiz_id]) seen[row.quiz_id] = new Set();
+      seen[row.quiz_id].add(row.user_id);
+    });
+    
+    for (const quizId in seen) {
+      counts[quizId] = seen[quizId].size;
+    }
+    
+    return counts;
   }
 };
