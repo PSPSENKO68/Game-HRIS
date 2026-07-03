@@ -246,6 +246,7 @@ export const db = {
       .select('id, employee_code, full_name, department, total_score, role')
       .eq('is_active', true)
       .neq('role', 'owner')
+      .gt('total_score', 0)  // Chỉ lấy người có điểm > 0
       .order('total_score', { ascending: false })
       .limit(limit);
 

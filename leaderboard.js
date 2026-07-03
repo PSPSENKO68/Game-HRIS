@@ -52,10 +52,12 @@ document.addEventListener('DOMContentLoaded', async () => {
       selfName.textContent = currentUser.full_name;
       selfDept.textContent = currentUser.department;
       selfScore.textContent = `${currentUserScore}đ`;
-      if (currentUserRank && currentUserRank > 0) {
+      
+      // Chỉ hiển thị rank nếu người dùng có điểm > 0
+      if (currentUserScore > 0 && currentUserRank && currentUserRank > 0) {
         selfRankNum.textContent = `#${currentUserRank}`;
       } else {
-        selfRankNum.textContent = `--`; // Chưa có điểm, chưa có hạng
+        selfRankNum.textContent = `--`; // 0 điểm → chưa có hạng
       }
       selfRankRow.classList.remove('hidden');
     }
