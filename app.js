@@ -154,13 +154,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     activeQuizPanel.classList.remove('hidden');
 
     btnPlayQuiz.addEventListener('click', async () => {
-      // 1. Kiểm tra ngày Chủ Nhật
-      if (db.isSunday()) {
-        showGlobalAlert('Không thể tham gia', 'Hệ thống tạm đóng vào Chủ Nhật hằng tuần. Hẹn gặp lại vào thứ Hai!');
-        return;
-      }
-
-      // 2. Kiểm tra giới hạn lượt chơi (riêng từng user)
+      // 1. Kiểm tra giới hạn lượt chơi (riêng từng user)
       const playsToday = await db.getPlaysToday(user.id);
       const globalLimit = await db.getDailyLimit();
       const maxPlays = (user.max_plays !== null && user.max_plays !== undefined) ? user.max_plays : globalLimit;

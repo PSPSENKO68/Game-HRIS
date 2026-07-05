@@ -25,12 +25,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   const pinInput = document.getElementById('pin');
   const errorAlert = document.getElementById('error_alert');
   const btnSubmit = document.getElementById('btn_submit');
-  const sundayLockBanner = document.getElementById('sunday_lock_banner');
-
-  // Kiểm tra Chủ Nhật
-  if (db.isSunday() && sundayLockBanner) {
-    sundayLockBanner.classList.remove('hidden');
-  }
 
   if (loginForm) {
     loginForm.addEventListener('submit', async (e) => {
@@ -44,11 +38,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
       if (!employeeCode || !pin) {
         showError('Vui lòng nhập đầy đủ Số điện thoại và mã PIN.');
-        return;
-      }
-
-      if (db.isSunday()) {
-        showError('Game tạm đóng vào Chủ Nhật. Hãy quay lại vào thứ Hai!');
         return;
       }
 

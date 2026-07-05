@@ -81,14 +81,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Handle Retry click routine
   if (btnRetryQuiz) {
     btnRetryQuiz.addEventListener('click', async () => {
-      // 1. Check if Sunday
-      if (db.isSunday()) {
-        alert("Game tạm đóng vào Chủ Nhật.");
-        window.location.href = '/index.html';
-        return;
-      }
-
-      // 2. Refresh count of plays today
+      // 1. Refresh count of plays today
       btnRetryQuiz.disabled = true;
       const initialText = btnRetryQuiz.innerHTML;
       btnRetryQuiz.innerHTML = 'ĐANG ĐỒNG BỘ LƯỢT CHƠI...';
