@@ -905,6 +905,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // History Filter Inputs
   const filterHistorySearch = document.getElementById('filter_history_search');
+  const filterHistoryQuiz = document.getElementById('filter_history_quiz');
   const filterHistoryMonth = document.getElementById('filter_history_month');
   const filterHistoryWeek = document.getElementById('filter_history_week');
   const btnClearHistoryFilter = document.getElementById('btn_clear_history_filter');
@@ -912,12 +913,14 @@ document.addEventListener('DOMContentLoaded', async () => {
   const triggerHistoryFilter = () => fetchAndRenderHistory();
 
   if (filterHistorySearch) filterHistorySearch.addEventListener('input', triggerHistoryFilter);
+  if (filterHistoryQuiz) filterHistoryQuiz.addEventListener('change', triggerHistoryFilter);
   if (filterHistoryMonth) filterHistoryMonth.addEventListener('input', triggerHistoryFilter);
   if (filterHistoryWeek) filterHistoryWeek.addEventListener('input', triggerHistoryFilter);
   
   if (btnClearHistoryFilter) {
     btnClearHistoryFilter.addEventListener('click', () => {
       if(filterHistorySearch) filterHistorySearch.value = '';
+      if(filterHistoryQuiz) filterHistoryQuiz.value = '';
       if(filterHistoryMonth) filterHistoryMonth.value = '';
       if(filterHistoryWeek) filterHistoryWeek.value = '';
       fetchAndRenderHistory();
@@ -928,10 +931,22 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (!historyTableBody) return;
     historyTableBody.innerHTML = '<tr><td colspan="7" class="py-4 text-center text-slate-400 italic">Đang tải lịch sử...</td></tr>';
     
+    // Load quiz options for filter if empty
+    if (filterHistoryQuiz && filterHistoryQuiz.options.length <= 1) {
+      const allQuizzes = await db.adminGetQuizzes();
+      allQuizzes.forEach(q => {
+        const opt = document.createElement('option');
+        opt.value = q.id;
+        opt.textContent = q.title;
+        filterHistoryQuiz.appendChild(opt);
+      });
+    }
+
     let historyData = await db.adminGetPlayHistory();
     
     // Apply filters
     const searchVal = filterHistorySearch?.value.toLowerCase().trim() || '';
+    const quizVal = filterHistoryQuiz?.value;
     const monthVal = filterHistoryMonth?.value;
     const weekVal = filterHistoryWeek?.value;
 
@@ -943,6 +958,9 @@ document.addEventListener('DOMContentLoaded', async () => {
       });
     }
     
+    if (quizVal) {
+      historyData = historyData.filter(row => row.quiz_id === quizVal);
+    }
     if (monthVal) {
       historyData = historyData.filter(row => row.quizzes?.month_no == monthVal);
     }
