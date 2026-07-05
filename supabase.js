@@ -271,11 +271,11 @@ export const db = {
       .order('total_score', { ascending: false });
 
     if (!data) return null;
-    
+
     // Kiểm tra user có trong danh sách rank không (phải có điểm > 0)
     const rank = data.findIndex(u => u.id === userId);
     if (rank < 0) return null; // Không có hạng (chưa có điểm)
-    
+
     // Xử lý đồng hạng: người đồng điểm có cùng hạng
     const myScore = data[rank].total_score;
     const firstWithSameScore = data.findIndex(u => u.total_score === myScore);
@@ -386,6 +386,16 @@ export const db = {
   },
 
   // ── 8. ADMIN: QUẢN LÝ QUIZ ──────────────────────────────────────────────
+  async adminGetQuestions(quizId) {
+    const { data, error } = await supabase
+      .from('questions')
+      .select('*')
+      .eq('quiz_id', quizId)
+      .order('created_at', { ascending: true });
+    if (error) return [];
+    return data || [];
+  },
+
   async adminGetQuizzes() {
     const { data, error } = await supabase
       .from('quizzes')
@@ -463,7 +473,7 @@ export const db = {
       ];
 
       const correctIdx = parseInt(row['Đáp án đúng'] || row['correct'] || row['correct_option_index_1_to_4'] || '1') - 1;
-      
+
       const point = parseInt(row['Point'] || row['point'] || row['Điểm'] || '10');
       const timeLimit = parseInt(row['Time'] || row['time'] || row['Thời gian'] || '15');
 
@@ -558,7 +568,7 @@ export const db = {
     // 1. Cập nhật nội dung câu hỏi
     const { error: qErr } = await supabase
       .from('questions')
-      .update({ 
+      .update({
         question_text: questionText,
         point: point,
         time_limit: timeLimit
@@ -688,8 +698,8 @@ export const db = {
 
     const scoreField = period === 'week' ? 'week_score'
       : period === 'month' ? 'month_score'
-      : period === 'quarter' ? 'quarter_score'
-      : 'total_score';
+        : period === 'quarter' ? 'quarter_score'
+          : 'total_score';
 
     const rows = aggregated
       .filter(u => u.role !== 'owner')
@@ -736,21 +746,21 @@ export const db = {
     const { data, error } = await supabase
       .from('play_history')
       .select('quiz_id, user_id');
-      
+
     if (error) return {};
 
     const counts = {};
-    const seen = {}; 
-    
+    const seen = {};
+
     (data || []).forEach(row => {
       if (!seen[row.quiz_id]) seen[row.quiz_id] = new Set();
       seen[row.quiz_id].add(row.user_id);
     });
-    
+
     for (const quizId in seen) {
       counts[quizId] = seen[quizId].size;
     }
-    
+
     return counts;
   }
 };

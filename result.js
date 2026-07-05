@@ -43,7 +43,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       const freshUser = await db.getUserById(user.id);
       const totalScore = freshUser ? (freshUser.total_score || 0) : 0;
       totalScoreDisplay.innerHTML = `<span class="text-[#E9C691]">${totalScore}</span> <span class="text-white/50 text-base font-bold">điểm</span>`;
-      
+
       const rankBadge = document.getElementById('rank_badge');
       if (rankBadge) {
         const rank = await db.getUserRank(user.id);
@@ -88,7 +88,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
       try {
         const playsToday = await db.getPlaysToday(user.id);
-        
+
         if (playsToday >= 3) {
           // Trigger the limit modal indicating daily restriction
           retryLimitModal.classList.remove('hidden');

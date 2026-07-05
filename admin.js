@@ -51,7 +51,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   const formQuizActive = document.getElementById('form_quiz_active');
   const btnOpenQuizModal = document.getElementById('btn_open_quiz_modal');
   const btnCloseQuizModal = document.getElementById('btn_close_quiz_modal');
-  
+
   // Filter Bar Elements
   const filterQuizMonth = document.getElementById('filter_quiz_month');
   const filterQuizWeek = document.getElementById('filter_quiz_week');
@@ -161,8 +161,8 @@ document.addEventListener('DOMContentLoaded', async () => {
       const roleBadge = u.role === 'owner'
         ? '<span class="inline-flex px-2 py-0.5 rounded-lg text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-300">👑 Owner</span>'
         : u.role === 'admin'
-        ? '<span class="inline-flex px-2 py-0.5 rounded-lg text-[10px] font-bold bg-indigo-100 text-indigo-800 border border-indigo-300">⚡ Admin</span>'
-        : '<span class="inline-flex px-2 py-0.5 rounded-lg text-[10px] font-bold bg-slate-100 text-slate-600 border border-slate-200">👤 Nhân viên</span>';
+          ? '<span class="inline-flex px-2 py-0.5 rounded-lg text-[10px] font-bold bg-indigo-100 text-indigo-800 border border-indigo-300">⚡ Admin</span>'
+          : '<span class="inline-flex px-2 py-0.5 rounded-lg text-[10px] font-bold bg-slate-100 text-slate-600 border border-slate-200">👤 Nhân viên</span>';
 
       const limitDisplay = (u.max_plays !== null && u.max_plays !== undefined)
         ? `<span class="px-2 py-0.5 rounded-lg bg-orange-50 text-orange-600 border border-orange-200 font-bold text-[11px]">${u.max_plays} lượt</span>`
@@ -179,11 +179,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         <td class="p-3 text-center">${limitDisplay}</td>
         <td class="p-3 text-center font-extrabold text-indigo-600 font-['Space_Grotesk']">${u.total_score || 0}đ</td>
         <td class="p-3 text-center">
-          <button class="toggle-active-btn inline-flex px-2.5 py-1 text-[10px] font-bold rounded-lg cursor-pointer ${
-            u.is_active
-              ? 'bg-emerald-50 text-emerald-600 border border-emerald-200'
-              : 'bg-rose-50 text-rose-500 border border-rose-200'
-          }" data-id="${u.id}" data-active="${u.is_active}">
+          <button class="toggle-active-btn inline-flex px-2.5 py-1 text-[10px] font-bold rounded-lg cursor-pointer ${u.is_active
+          ? 'bg-emerald-50 text-emerald-600 border border-emerald-200'
+          : 'bg-rose-50 text-rose-500 border border-rose-200'
+        }" data-id="${u.id}" data-active="${u.is_active}">
             ${u.is_active ? 'Hoạt động' : 'Tạm Khóa'}
           </button>
         </td>
@@ -330,7 +329,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     let qList = await db.adminGetQuizzes();
     const participantCounts = await db.adminGetQuizParticipantCount();
-    
+
     // Lọc theo Tháng & Tuần
     const filterMonth = document.getElementById('filter_quiz_month')?.value;
     const filterWeek = document.getElementById('filter_quiz_week')?.value;
@@ -351,15 +350,13 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     qList.forEach(q => {
       const card = document.createElement('div');
-      card.className = `p-5 rounded-3xl border shadow-xs transition duration-150 flex flex-col justify-between ${
-        q.active ? 'bg-indigo-900 border-indigo-950 text-white relative overflow-hidden' : 'bg-white border-slate-200 text-slate-800'
-      }`;
+      card.className = `p-5 rounded-3xl border shadow-xs transition duration-150 flex flex-col justify-between ${q.active ? 'bg-indigo-900 border-indigo-950 text-white relative overflow-hidden' : 'bg-white border-slate-200 text-slate-800'
+        }`;
       card.innerHTML = `
         <div>
           <div class="flex items-center justify-between mb-3.5">
-            <span class="inline-flex px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider ${
-              q.active ? 'bg-amber-400 text-slate-900' : 'bg-slate-100 text-slate-500 border border-slate-200'
-            }">Tháng ${q.month_no || 1} • Tuần ${q.week_no}</span>
+            <span class="inline-flex px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider ${q.active ? 'bg-amber-400 text-slate-900' : 'bg-slate-100 text-slate-500 border border-slate-200'
+        }">Tháng ${q.month_no || 1} • Tuần ${q.week_no}</span>
             <div class="flex items-center space-x-1.5 text-xs font-bold">
               <input type="checkbox" class="quiz-toggle-active-chk cursor-pointer w-4 h-4 rounded" data-id="${q.id}" ${q.active ? 'checked' : ''} />
               <span>Kích hoạt</span>
@@ -369,12 +366,10 @@ document.addEventListener('DOMContentLoaded', async () => {
           <p class="text-[11px] mt-2 font-semibold opacity-80">${participantCounts[q.id] || 0} người tham gia</p>
         </div>
         <div class="flex items-center justify-between pt-4 border-t ${q.active ? 'border-white/10' : 'border-slate-100'}">
-          <button class="view-q-questions-btn px-3 py-1.5 border hover:opacity-90 active:scale-95 text-[10px] font-bold rounded-xl transition cursor-pointer ${
-            q.active ? 'bg-white/15 text-white border-white/20 hover:bg-white/25' : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
-          }" data-id="${q.id}" data-title="${q.title}" data-week="${q.week_no}" data-month="${q.month_no || 1}">✏️ Chỉnh sửa</button>
-          <button class="delete-quiz-btn px-2 py-1.5 text-[10px] font-bold rounded-xl hover:opacity-90 active:scale-95 transition flex items-center gap-1 cursor-pointer ${
-            q.active ? 'bg-rose-500/20 text-rose-200 border border-rose-500/30' : 'bg-rose-50 text-rose-600 border border-rose-200'
-          }" data-id="${q.id}">🗑️ Xóa đề</button>
+          <button class="view-q-questions-btn px-3 py-1.5 border hover:opacity-90 active:scale-95 text-[10px] font-bold rounded-xl transition cursor-pointer ${q.active ? 'bg-white/15 text-white border-white/20 hover:bg-white/25' : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
+        }" data-id="${q.id}" data-title="${q.title}" data-week="${q.week_no}" data-month="${q.month_no || 1}">✏️ Chỉnh sửa</button>
+          <button class="delete-quiz-btn px-2 py-1.5 text-[10px] font-bold rounded-xl hover:opacity-90 active:scale-95 transition flex items-center gap-1 cursor-pointer ${q.active ? 'bg-rose-500/20 text-rose-200 border border-rose-500/30' : 'bg-rose-50 text-rose-600 border border-rose-200'
+        }" data-id="${q.id}">🗑️ Xóa đề</button>
         </div>
       `;
       quizzesContainer.appendChild(card);
@@ -438,7 +433,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         <div class="flex items-start justify-between gap-3 mb-3">
           <p class="text-xs font-bold text-slate-900 flex-1"><span class="text-indigo-600 mr-1">${idx + 1}.</span>${q.question_text}</p>
           <div class="flex items-center gap-1.5">
-            <button class="edit-question-btn p-1.5 bg-amber-50 border border-amber-200 text-amber-600 rounded-lg hover:bg-amber-100 transition inline-flex items-center cursor-pointer text-[10px] font-bold gap-1" data-id="${q.id}" data-qtext="${encodeURIComponent(q.question_text)}" data-point="${q.point || 10}" data-time="${q.time_limit || 15}" data-answers='${JSON.stringify((q.answers || []).map(a => ({text: a.answer_text, correct: a.is_correct})))}' title="Sửa câu hỏi">✏️ Sửa</button>
+            <button class="edit-question-btn p-1.5 bg-amber-50 border border-amber-200 text-amber-600 rounded-lg hover:bg-amber-100 transition inline-flex items-center cursor-pointer text-[10px] font-bold gap-1" data-id="${q.id}" data-qtext="${encodeURIComponent(q.question_text)}" data-point="${q.point || 10}" data-time="${q.time_limit || 15}" data-answers='${JSON.stringify((q.answers || []).map(a => ({ text: a.answer_text, correct: a.is_correct })))}' title="Sửa câu hỏi">✏️ Sửa</button>
             <button class="del-question-btn p-1.5 bg-rose-50 border border-rose-200 text-rose-600 rounded-lg hover:bg-rose-100 transition inline-flex items-center cursor-pointer" data-id="${q.id}" title="Xóa câu hỏi">🗑️</button>
           </div>
         </div>
@@ -474,7 +469,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const qPoint = btn.getAttribute('data-point') || '10';
         const qTime = btn.getAttribute('data-time') || '15';
         let answers = [];
-        try { answers = JSON.parse(btn.getAttribute('data-answers') || '[]'); } catch (_) {}
+        try { answers = JSON.parse(btn.getAttribute('data-answers') || '[]'); } catch (_) { }
 
         editQuestionId.value = qId;
         editQuestionText.value = qText;
@@ -511,7 +506,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   const modalEditQuiz = document.getElementById('modal_edit_quiz');
   const formEditQuiz = document.getElementById('form_edit_quiz');
   const btnCloseEditQuizModal = document.getElementById('btn_close_edit_quiz_modal');
-  
+
   if (btnEditQuizInfo) {
     btnEditQuizInfo.addEventListener('click', () => {
       document.getElementById('form_edit_quiz_id').value = currentExpandedQuizId;
@@ -521,7 +516,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       modalEditQuiz.classList.remove('hidden');
     });
   }
-  
+
   if (btnCloseEditQuizModal) {
     btnCloseEditQuizModal.addEventListener('click', () => modalEditQuiz.classList.add('hidden'));
   }
@@ -533,7 +528,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       const title = document.getElementById('form_edit_quiz_title').value.trim();
       const month = parseInt(document.getElementById('form_edit_quiz_month').value) || 1;
       const week = parseInt(document.getElementById('form_edit_quiz_week').value) || 1;
-      
+
       const result = await db.adminUpdateQuiz(qId, { title, month_no: month, week_no: week });
       if (result.success) {
         modalEditQuiz.classList.add('hidden');
@@ -677,12 +672,12 @@ document.addEventListener('DOMContentLoaded', async () => {
           // Thử UTF-8 trước, nếu phát hiện ký tự lỗi thì thử windows-1252 (ANSI — Excel VN hay dùng)
           const buf = await file.arrayBuffer();
           let text = new TextDecoder('utf-8').decode(buf);
-          
+
           // Kiểm tra nếu có ký tự thay thế (U+FFFD) hoặc ký tự lạ → thử lại với ANSI
           if (text.includes('\uFFFD') || /[\x80-\x9F]/.test(text)) {
             text = new TextDecoder('windows-1252').decode(buf);
           }
-          
+
           importedFileRows = parseCSV(text);
 
         }
@@ -916,13 +911,13 @@ document.addEventListener('DOMContentLoaded', async () => {
   if (filterHistoryQuiz) filterHistoryQuiz.addEventListener('change', triggerHistoryFilter);
   if (filterHistoryMonth) filterHistoryMonth.addEventListener('input', triggerHistoryFilter);
   if (filterHistoryWeek) filterHistoryWeek.addEventListener('input', triggerHistoryFilter);
-  
+
   if (btnClearHistoryFilter) {
     btnClearHistoryFilter.addEventListener('click', () => {
-      if(filterHistorySearch) filterHistorySearch.value = '';
-      if(filterHistoryQuiz) filterHistoryQuiz.value = '';
-      if(filterHistoryMonth) filterHistoryMonth.value = '';
-      if(filterHistoryWeek) filterHistoryWeek.value = '';
+      if (filterHistorySearch) filterHistorySearch.value = '';
+      if (filterHistoryQuiz) filterHistoryQuiz.value = '';
+      if (filterHistoryMonth) filterHistoryMonth.value = '';
+      if (filterHistoryWeek) filterHistoryWeek.value = '';
       fetchAndRenderHistory();
     });
   }
@@ -930,7 +925,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   async function fetchAndRenderHistory() {
     if (!historyTableBody) return;
     historyTableBody.innerHTML = '<tr><td colspan="7" class="py-4 text-center text-slate-400 italic">Đang tải lịch sử...</td></tr>';
-    
+
     // Load quiz options for filter if empty
     if (filterHistoryQuiz && filterHistoryQuiz.options.length <= 1) {
       const allQuizzes = await db.adminGetQuizzes();
@@ -943,7 +938,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     let historyData = await db.adminGetPlayHistory();
-    
+
     // Apply filters
     const searchVal = filterHistorySearch?.value.toLowerCase().trim() || '';
     const quizVal = filterHistoryQuiz?.value;
@@ -957,7 +952,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         return name.includes(searchVal) || code.includes(searchVal);
       });
     }
-    
+
     if (quizVal) {
       historyData = historyData.filter(row => row.quiz_id === quizVal);
     }
@@ -966,6 +961,18 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
     if (weekVal) {
       historyData = historyData.filter(row => row.quizzes?.week_no == weekVal);
+    }
+
+    // Hiển thị Dashboard
+    const dashboardContainer = document.getElementById('dashboard_stats');
+    if (dashboardContainer) {
+      if (quizVal && historyData.length > 0) {
+        dashboardContainer.classList.remove('hidden');
+        await renderDashboard(historyData, quizVal, dashboardContainer);
+      } else {
+        dashboardContainer.classList.add('hidden');
+        dashboardContainer.innerHTML = '';
+      }
     }
 
     if (historyData.length === 0) {
@@ -980,7 +987,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       const userName = row.users ? row.users.full_name : 'N/A';
       const userCode = row.users ? row.users.employee_code : '';
       const quizTitle = row.quizzes ? row.quizzes.title : 'Quiz';
-      
+
       tr.innerHTML = `
         <td class="py-3 px-4 font-semibold">${playedDate}</td>
         <td class="py-3 px-4">
@@ -1005,14 +1012,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.querySelectorAll('.btn-view-wrong').forEach(btn => {
       btn.addEventListener('click', () => {
         let wrongArr = [];
-        try { wrongArr = JSON.parse(btn.getAttribute('data-wrong') || '[]'); } catch(e) {}
-        
+        try { wrongArr = JSON.parse(btn.getAttribute('data-wrong') || '[]'); } catch (e) { }
+
         if (wrongArr.length === 0) {
           wrongAnswersList.innerHTML = '<p class="text-emerald-600 font-bold text-center py-4">Tuyệt vời! Người chơi không sai câu nào.</p>';
         } else {
           wrongAnswersList.innerHTML = wrongArr.map((w, idx) => `
             <div class="p-4 bg-slate-50 rounded-2xl border border-slate-100">
-              <p class="font-bold text-slate-800 mb-2"><span class="text-rose-500 mr-1">Q${idx+1}.</span> ${w.question}</p>
+              <p class="font-bold text-slate-800 mb-2"><span class="text-rose-500 mr-1">Q${idx + 1}.</span> ${w.question}</p>
               <div class="flex flex-col gap-1.5 text-xs">
                 <p class="text-rose-600"><span class="font-bold">Đã chọn:</span> ${w.selected}</p>
                 <p class="text-emerald-600"><span class="font-bold">Đáp án đúng:</span> ${w.correct}</p>
@@ -1023,6 +1030,87 @@ document.addEventListener('DOMContentLoaded', async () => {
         modalWrongAnswers.classList.remove('hidden');
       });
     });
+  }
+
+  async function renderDashboard(historyData, quizId, container) {
+    container.innerHTML = '<p class="text-center text-slate-400 text-xs py-4">Đang tính toán thống kê...</p>';
+    
+    const questions = await db.adminGetQuestions(quizId);
+    if (!questions || questions.length === 0) {
+      container.innerHTML = '<p class="text-center text-rose-500 text-xs py-4">Không tìm thấy dữ liệu câu hỏi cho đề thi này.</p>';
+      return;
+    }
+
+    const totalPlays = historyData.length;
+    let totalTime = 0;
+    
+    // Khởi tạo map đếm lỗi
+    const wrongCountsByQuestion = {};
+    questions.forEach(q => {
+      wrongCountsByQuestion[q.question_text.trim()] = 0;
+    });
+
+    historyData.forEach(row => {
+      totalTime += (parseInt(row.time_spent) || 0);
+      const wrongs = row.wrong_answers || [];
+      wrongs.forEach(w => {
+        const qText = (w.question || '').trim();
+        const matchedKey = Object.keys(wrongCountsByQuestion).find(k => k === qText || k.includes(qText) || qText.includes(k));
+        if (matchedKey) {
+          wrongCountsByQuestion[matchedKey]++;
+        }
+      });
+    });
+
+    const avgTime = Math.round(totalTime / totalPlays) || 0;
+
+    let statsHtml = `
+      <div class="grid grid-cols-2 gap-4 mb-4">
+        <div class="bg-indigo-50 border border-indigo-100 p-4 rounded-2xl flex flex-col items-center justify-center">
+          <span class="text-[10px] uppercase font-bold text-indigo-400 tracking-wider">Tổng số lượt thi</span>
+          <span class="text-3xl font-black text-indigo-700 font-['Space_Grotesk']">${totalPlays}</span>
+        </div>
+        <div class="bg-emerald-50 border border-emerald-100 p-4 rounded-2xl flex flex-col items-center justify-center">
+          <span class="text-[10px] uppercase font-bold text-emerald-500 tracking-wider">Thời gian TB / lượt</span>
+          <span class="text-3xl font-black text-emerald-700 font-['Space_Grotesk']">${avgTime}s</span>
+        </div>
+      </div>
+      <div class="bg-slate-50 border border-slate-100 rounded-2xl p-5">
+        <h3 class="text-xs font-bold text-slate-700 mb-4 uppercase tracking-wide">Tỉ lệ Đúng / Sai theo từng câu</h3>
+        <div class="space-y-4 max-h-[400px] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-slate-200">
+    `;
+
+    questions.forEach((q, idx) => {
+      const qText = q.question_text.trim();
+      const wrongs = wrongCountsByQuestion[qText] || 0;
+      const corrects = totalPlays - wrongs;
+      const correctRatio = Math.round((corrects / totalPlays) * 100) || 0;
+      const wrongRatio = 100 - correctRatio;
+
+      statsHtml += `
+        <div>
+          <div class="flex justify-between items-end mb-1.5 gap-2">
+            <span class="text-[11px] font-bold text-slate-700 flex-1 leading-snug" title="${qText}">Câu ${idx + 1}: ${qText}</span>
+            <span class="text-[10px] font-bold ${correctRatio >= 50 ? 'text-emerald-600' : 'text-rose-500'} whitespace-nowrap">${correctRatio}% Đúng</span>
+          </div>
+          <div class="w-full bg-rose-200 rounded-full h-2 flex overflow-hidden">
+            <div class="bg-emerald-500 h-2 transition-all duration-500" style="width: ${correctRatio}%"></div>
+            <div class="bg-rose-500 h-2 transition-all duration-500" style="width: ${wrongRatio}%"></div>
+          </div>
+          <div class="flex justify-between mt-1 text-[9px] text-slate-400 font-semibold">
+            <span>Đúng: ${corrects}</span>
+            <span>Sai: ${wrongs}</span>
+          </div>
+        </div>
+      `;
+    });
+
+    statsHtml += `
+        </div>
+      </div>
+    `;
+
+    container.innerHTML = statsHtml;
   }
 
   // ── Initial render ───────────────────────────────────────────────────────────
