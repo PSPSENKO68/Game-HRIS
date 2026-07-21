@@ -231,14 +231,16 @@ export const db = {
       return { success: false };
     }
 
-    // Cập nhật total_score trên user
-    const { data: histData } = await supabase
-      .from('play_history')
-      .select('score')
-      .eq('user_id', userId);
+    // Cập nhật total_score trên user (cộng dồn vào điểm hiện tại để không làm mất điểm Admin sửa)
+    const { data: userData } = await supabase
+      .from('users')
+      .select('total_score')
+      .eq('id', userId)
+      .single();
 
-    const totalScore = (histData || []).reduce((sum, h) => sum + (parseInt(h.score) || 0), 0);
-    await supabase.from('users').update({ total_score: totalScore }).eq('id', userId);
+    const currentTotal = parseInt(userData?.total_score) || 0;
+    const newTotal = currentTotal + (parseInt(score) || 0);
+    await supabase.from('users').update({ total_score: newTotal }).eq('id', userId);
 
     return { success: true };
   },
@@ -313,18 +315,17 @@ export const db = {
 
     return users.map(user => {
       const userHistory = history.filter(h => h.user_id === user.id);
-      let weekScore = 0, monthScore = 0, quarterScore = 0, totalScore = 0;
+      let weekScore = 0, monthScore = 0, quarterScore = 0;
 
       userHistory.forEach(h => {
         const val = parseInt(h.score) || 0;
-        totalScore += val;
         const d = new Date(h.played_at);
         if (currentWeekQuizIds.includes(h.quiz_id)) weekScore += val;
         if (d.getMonth() === currentMonth && d.getFullYear() === currentYear) monthScore += val;
         if (Math.floor(d.getMonth() / 3) === currentQuarter && d.getFullYear() === currentYear) quarterScore += val;
       });
 
-      return { ...user, week_score: weekScore, month_score: monthScore, quarter_score: quarterScore, total_score: totalScore };
+      return { ...user, week_score: weekScore, month_score: monthScore, quarter_score: quarterScore };
     });
   },
 
@@ -372,12 +373,6 @@ export const db = {
       cleanUpdates.max_plays = (updates.max_plays !== '' && updates.max_plays !== undefined && updates.max_plays !== null)
         ? parseInt(updates.max_plays)
         : null;
-    }
-    // total_score đặc biệt: đảm bảo dạng số nguyên
-    if ('total_score' in updates) {
-      cleanUpdates.total_score = (updates.total_score !== '' && updates.total_score !== undefined && updates.total_score !== null)
-        ? parseInt(updates.total_score)
-        : 0;
     }
 
     const { error } = await supabase.from('users').update(cleanUpdates).eq('id', id);
