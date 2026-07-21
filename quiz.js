@@ -109,7 +109,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     Object.keys(optButtons).forEach(key => {
       const { btn } = optButtons[key];
       btn.disabled = false;
-      btn.className = btn.className.replace(/\b(ring-4|ring-emerald-500|border-4|opacity-40)\b/g, '').trim();
+      btn.className = btn.className.replace(/\b(ring-4|ring-emerald-500|ring-emerald-400|ring-rose-400|border-4|opacity-40|opacity-30|grayscale|scale-\[1\.03\])\b/g, '').trim();
       btn.classList.add('scale-100');
     });
 
@@ -249,7 +249,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       totalTimeSpent += (timeSpent > 0 ? timeSpent : 0);
 
       if (selectedButton) {
-        selectedButton.classList.add('opacity-40', 'ring-4', 'ring-rose-400');
+        selectedButton.classList.add('ring-4', 'ring-rose-400');
         feedbackTitle.textContent = "SAI MẤT RỒI! 😢";
         
         Object.keys(optButtons).forEach(key => {
@@ -282,18 +282,16 @@ document.addEventListener('DOMContentLoaded', async () => {
       feedbackSub.textContent = "Cố gắng câu sau nhé!";
     }
 
-    // Highlight the correct answer with a glow border or distinctive opacity
+    // Highlight the correct answer vividly and turn all incorrect answers gray
     Object.keys(optButtons).forEach(key => {
       const currentBtn = optButtons[key].btn;
       const optCorrect = currentBtn.getAttribute('data-correct') === 'true';
       
       if (optCorrect) {
-        currentBtn.classList.remove('opacity-40');
-        currentBtn.classList.add('ring-4', 'ring-emerald-500', 'scale-[1.02]');
+        currentBtn.classList.remove('opacity-40', 'opacity-30', 'grayscale');
+        currentBtn.classList.add('ring-4', 'ring-emerald-500', 'scale-[1.03]');
       } else {
-        if (currentBtn !== selectedButton) {
-          currentBtn.classList.add('opacity-40');
-        }
+        currentBtn.classList.add('grayscale', 'opacity-30');
       }
     });
 
