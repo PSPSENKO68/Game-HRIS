@@ -373,6 +373,12 @@ export const db = {
         ? parseInt(updates.max_plays)
         : null;
     }
+    // total_score đặc biệt: đảm bảo dạng số nguyên
+    if ('total_score' in updates) {
+      cleanUpdates.total_score = (updates.total_score !== '' && updates.total_score !== undefined && updates.total_score !== null)
+        ? parseInt(updates.total_score)
+        : 0;
+    }
 
     const { error } = await supabase.from('users').update(cleanUpdates).eq('id', id);
     if (error) return { success: false, message: error.message };

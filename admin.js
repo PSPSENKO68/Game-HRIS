@@ -37,6 +37,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   const formUserDept = document.getElementById('form_user_dept');
   const formUserPin = document.getElementById('form_user_pin');
   const formUserMaxPlays = document.getElementById('form_user_max_plays');
+  const formUserScore = document.getElementById('form_user_score');
   const formUserActive = document.getElementById('form_user_active');
   const btnOpenUserModal = document.getElementById('btn_open_user_modal');
   const btnCloseUserModal = document.getElementById('btn_close_user_modal');
@@ -216,6 +217,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           formUserDept.value = targetU.department || '';
           formUserPin.value = targetU.pin;
           formUserMaxPlays.value = (targetU.max_plays !== null && targetU.max_plays !== undefined) ? targetU.max_plays : '';
+          if (formUserScore) formUserScore.value = targetU.total_score || 0;
           formUserActive.checked = targetU.is_active;
 
           // Phân quyền: set dropdown role
@@ -261,6 +263,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       formUserId.value = '';
       formUser.reset();
       if (formUserMaxPlays) formUserMaxPlays.value = '';
+      if (formUserScore) formUserScore.value = '0';
       // Reset role về mặc định 'user' khi thêm mới
       const roleSelect = document.getElementById('form_user_role');
       if (roleSelect) {
@@ -292,6 +295,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         pin: formUserPin.value.trim(),
         is_active: formUserActive.checked,
         max_plays: (formUserMaxPlays && formUserMaxPlays.value.trim() !== '') ? parseInt(formUserMaxPlays.value) : null,
+        total_score: (formUserScore && formUserScore.value.trim() !== '') ? parseInt(formUserScore.value) : 0,
         ...(selectedRole ? { role: selectedRole } : {})
       };
 
