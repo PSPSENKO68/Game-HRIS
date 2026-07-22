@@ -208,11 +208,12 @@ document.addEventListener('DOMContentLoaded', async () => {
       // Correct flow
       correctCount += 1;
       
-      // Speed Bonus Logic
+      // Speed Bonus Logic (Tạm thời vô hiệu hóa theo yêu cầu)
       let bonusEarned = 0;
       const timeSpent = currentMaxTime - currentRemainingTime;
       totalTimeSpent += (timeSpent > 0 ? timeSpent : 0);
 
+      /* 
       if (timeSpent <= currentMaxTime / 3) {
         bonusEarned = Math.round(basePoint * 0.5); // Tier 1 (50%)
       } else if (timeSpent <= (currentMaxTime * 2) / 3) {
@@ -220,6 +221,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       } else {
         bonusEarned = Math.round(basePoint * 0.1); // Tier 3 (10%)
       }
+      */
 
       currentScore += basePoint;
       bonusScore += bonusEarned;
