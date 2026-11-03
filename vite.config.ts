@@ -19,6 +19,7 @@ export default defineConfig(() => {
           result: path.resolve(__dirname, 'result.html'),
           leaderboard: path.resolve(__dirname, 'leaderboard.html'),
           admin: path.resolve(__dirname, 'admin.html'),
+          flashcard: path.resolve(__dirname, 'flashcard.html'),
         },
       },
     },

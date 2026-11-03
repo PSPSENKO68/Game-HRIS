@@ -380,8 +380,41 @@ export const db = {
     return { success: true };
   },
 
-  async adminDeleteUser(id) {
+async adminDeleteUser(id) {
     const { error } = await supabase.from('users').delete().eq('id', id);
+    if (error) return { success: false, message: error.message };
+    return { success: true };
+  },
+
+  // ── Khóa / Mở khóa hàng loạt theo danh sách ID ──
+  async adminBulkUpdateUserStatus(userIds, isActive) {
+    if (!userIds || userIds.length === 0) return { success: true, count: 0 };
+    let query = supabase
+      .from('users')
+      .update({ is_active: isActive })
+      .in('id', userIds);
+
+    if (!isActive) {
+      query = query.neq('role', 'owner');
+    }
+
+    const { error } = await query;
+    if (error) return { success: false, message: error.message };
+    return { success: true };
+  },
+
+  // ── Khóa / Mở khóa toàn bộ nhân viên (ngoại trừ owner/admin) ──
+  async adminSetAllUsersStatus(isActive, excludeUserId = null) {
+    let query = supabase
+      .from('users')
+      .update({ is_active: isActive })
+      .neq('role', 'owner');
+
+    if (!isActive && excludeUserId) {
+      query = query.neq('id', excludeUserId);
+    }
+
+    const { error } = await query;
     if (error) return { success: false, message: error.message };
     return { success: true };
   },
@@ -763,5 +796,181 @@ export const db = {
     }
 
     return counts;
+  },
+
+  // ── FLASHCARD API ────────────────────────────────────────────────────────
+
+  async adminGetFlashcardSets() {
+    const { data, error } = await supabase
+      .from('flashcard_sets')
+      .select('*')
+      .order('created_at', { ascending: false });
+    if (error) return [];
+    return data || [];
+  },
+
+  async adminCreateFlashcardSet(title, description = '', category = '') {
+    const newSet = {
+      id: genId('fs'),
+      title: title.trim(),
+      description: description.trim(),
+      category: category.trim(),
+      active: false,
+      created_at: new Date().toISOString()
+    };
+    const { error } = await supabase.from('flashcard_sets').insert(newSet);
+    if (error) return { success: false, message: error.message };
+    return { success: true, set: newSet };
+  },
+
+  async adminUpdateFlashcardSet(setId, updates) {
+    const { error } = await supabase
+      .from('flashcard_sets')
+      .update({ title: updates.title, description: updates.description, category: updates.category })
+      .eq('id', setId);
+    if (error) return { success: false, message: error.message };
+    return { success: true };
+  },
+
+  async adminToggleFlashcardSetActive(setId, isActive) {
+    const { error } = await supabase
+      .from('flashcard_sets')
+      .update({ active: isActive })
+      .eq('id', setId);
+    if (error) return { success: false, message: error.message };
+    return { success: true };
+  },
+
+  async adminDeleteFlashcardSet(setId) {
+    const { error } = await supabase.from('flashcard_sets').delete().eq('id', setId);
+    if (error) return { success: false, message: error.message };
+    return { success: true };
+  },
+
+  async adminGetFlashcards(setId) {
+    const { data, error } = await supabase
+      .from('flashcards')
+      .select('*')
+      .eq('set_id', setId)
+      .order('created_at', { ascending: true });
+    if (error) return [];
+    return data || [];
+  },
+
+  async adminCreateFlashcard(setId, question, answer) {
+    const newCard = {
+      id: genId('fc'),
+      set_id: setId,
+      question: question.trim(),
+      answer: answer.trim(),
+      created_at: new Date().toISOString()
+    };
+    const { error } = await supabase.from('flashcards').insert(newCard);
+    if (error) return { success: false, message: error.message };
+    return { success: true };
+  },
+
+  async adminUpdateFlashcard(cardId, question, answer) {
+    const { error } = await supabase
+      .from('flashcards')
+      .update({ question: question.trim(), answer: answer.trim() })
+      .eq('id', cardId);
+    if (error) return { success: false, message: error.message };
+    return { success: true };
+  },
+
+  async adminDeleteFlashcard(cardId) {
+    const { error } = await supabase.from('flashcards').delete().eq('id', cardId);
+    if (error) return { success: false, message: error.message };
+    return { success: true };
+  },
+
+  async adminImportFlashcardsFromRows(rows, setTitle, category = '') {
+    const setResult = await db.adminCreateFlashcardSet(setTitle, '', category);
+    if (!setResult.success) return setResult;
+    const setId = setResult.set.id;
+    let importedCount = 0;
+    for (const row of rows) {
+      const question = (row['Cau hoi'] || row['question'] || row['Question'] || row['front'] || '').trim();
+      const answer = (row['Cau tra loi'] || row['answer'] || row['Answer'] || row['back'] || '').trim();
+      if (!question || !answer) continue;
+      const { error } = await supabase.from('flashcards').insert({
+        id: genId('fc'), set_id: setId, question, answer, created_at: new Date().toISOString()
+      });
+      if (!error) importedCount++;
+    }
+    return { success: true, importedCount, setId };
+  },
+
+  async getActiveFlashcardSets() {
+    const { data, error } = await supabase
+      .from('flashcard_sets')
+      .select('*')
+      .eq('active', true)
+      .order('created_at', { ascending: false });
+    if (error || !data) return [];
+    return data;
+  },
+
+  async getFlashcardsForStudy(userId, setId) {
+    const { data: cards, error } = await supabase
+      .from('flashcards').select('*').eq('set_id', setId).order('created_at', { ascending: true });
+    if (error || !cards) return [];
+    const cardIds = cards.map(c => c.id);
+    const { data: progress } = await supabase
+      .from('flashcard_progress').select('*').eq('user_id', userId).in('flashcard_id', cardIds);
+    const progressMap = {};
+    (progress || []).forEach(p => { progressMap[p.flashcard_id] = p; });
+    const now = new Date();
+    const enriched = cards.map(card => {
+      const prog = progressMap[card.id];
+      return {
+        ...card,
+        status: prog?.status || 'new',
+        next_review: prog?.next_review ? new Date(prog.next_review) : now,
+        review_count: prog?.review_count || 0
+      };
+    });
+    const priority = { 'review': 0, 'learning': 1, 'new': 2, 'known': 3 };
+    enriched.sort((a, b) => {
+      const pa = priority[a.status] ?? 2;
+      const pb = priority[b.status] ?? 2;
+      if (pa !== pb) return pa - pb;
+      return a.next_review - b.next_review;
+    });
+    return enriched;
+  },
+
+  async saveFlashcardProgress(userId, flashcardId, status) {
+    const now = new Date();
+    let nextReview = new Date(now);
+    if (status === 'known') nextReview.setDate(nextReview.getDate() + 7);
+    else if (status === 'learning') nextReview.setDate(nextReview.getDate() + 1);
+    // review: next_review = now
+    const { data: existing } = await supabase
+      .from('flashcard_progress').select('review_count')
+      .eq('user_id', userId).eq('flashcard_id', flashcardId).single();
+    const newCount = (existing?.review_count || 0) + 1;
+    const record = {
+      id: genId('fp'), user_id: userId, flashcard_id: flashcardId,
+      status, next_review: nextReview.toISOString(), review_count: newCount,
+      updated_at: now.toISOString()
+    };
+    const { error } = await supabase
+      .from('flashcard_progress').upsert(record, { onConflict: 'user_id,flashcard_id' });
+    if (error) return { success: false, message: error.message };
+    return { success: true };
+  },
+
+  async getFlashcardSetStats(userId, setId) {
+    const { data: cards } = await supabase.from('flashcards').select('id').eq('set_id', setId);
+    if (!cards || cards.length === 0) return { total: 0, known: 0, learning: 0, review: 0, new: 0 };
+    const cardIds = cards.map(c => c.id);
+    const { data: progress } = await supabase
+      .from('flashcard_progress').select('status').eq('user_id', userId).in('flashcard_id', cardIds);
+    const stats = { total: cards.length, known: 0, learning: 0, review: 0, new: 0 };
+    (progress || []).forEach(p => { if (stats[p.status] !== undefined) stats[p.status]++; });
+    stats.new = Math.max(0, cards.length - (stats.known + stats.learning + stats.review));
+    return stats;
   }
 };

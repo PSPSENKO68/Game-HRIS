@@ -22,11 +22,13 @@ document.addEventListener('DOMContentLoaded', async () => {
   const tabQuizzesBtn = document.getElementById('tab_quizzes_btn');
   const tabHistoryBtn = document.getElementById('tab_history_btn');
   const tabImportBtn = document.getElementById('tab_import_btn');
+  const tabFlashcardsBtn = document.getElementById('tab_flashcards_btn');
   const adminDbMode = document.getElementById('admin_db_mode');
   const sectionUsers = document.getElementById('section_users');
   const sectionQuizzes = document.getElementById('section_quizzes');
   const sectionHistory = document.getElementById('section_history');
   const sectionImport = document.getElementById('section_import');
+  const sectionFlashcards = document.getElementById('section_flashcards');
 
   // User Modal
   const modalUser = document.getElementById('modal_user');
@@ -42,6 +44,18 @@ document.addEventListener('DOMContentLoaded', async () => {
   const btnOpenUserModal = document.getElementById('btn_open_user_modal');
   const btnCloseUserModal = document.getElementById('btn_close_user_modal');
   const usersTableBody = document.getElementById('users_table_body');
+
+  // Bulk User Actions Elements
+  const chkSelectAllUsers = document.getElementById('chk_select_all_users');
+  const selectedUsersBadge = document.getElementById('selected_users_badge');
+  const countSelectedUsers = document.getElementById('count_selected_users');
+  const btnBulkUnlockSelected = document.getElementById('btn_bulk_unlock_selected');
+  const btnBulkLockSelected = document.getElementById('btn_bulk_lock_selected');
+  const countUnlockSel = document.getElementById('count_unlock_sel');
+  const countLockSel = document.getElementById('count_lock_sel');
+  const btnClearUserSelection = document.getElementById('btn_clear_user_selection');
+  const btnBulkUnlockAll = document.getElementById('btn_bulk_unlock_all');
+  const btnBulkLockAll = document.getElementById('btn_bulk_lock_all');
 
   // Quiz Modal
   const quizzesContainer = document.getElementById('quizzes_container');
@@ -124,7 +138,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     { btn: tabUsersBtn, section: sectionUsers },
     { btn: tabQuizzesBtn, section: sectionQuizzes },
     { btn: tabHistoryBtn, section: sectionHistory },
-    { btn: tabImportBtn, section: sectionImport }
+    { btn: tabImportBtn, section: sectionImport },
+    { btn: tabFlashcardsBtn, section: sectionFlashcards }
   ];
 
   tabConfigs.forEach(tab => {
@@ -142,19 +157,55 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (tab.btn === tabUsersBtn) fetchAndRenderUsers();
       if (tab.btn === tabQuizzesBtn) fetchAndRenderQuizzes();
       if (tab.btn === tabHistoryBtn) fetchAndRenderHistory();
+      if (tab.btn === tabFlashcardsBtn) fetchAndRenderFlashcardSets();
     });
   });
 
   // ── 1. USERS MANAGEMENT ──────────────────────────────────────────────────────
+  function updateBulkSelectionUI() {
+    const chks = document.querySelectorAll('.user-select-chk:checked');
+    const count = chks.length;
+    if (count > 0) {
+      if (selectedUsersBadge) selectedUsersBadge.classList.remove('hidden');
+      if (countSelectedUsers) countSelectedUsers.textContent = count;
+      if (btnBulkUnlockSelected) {
+        btnBulkUnlockSelected.classList.remove('hidden');
+        btnBulkUnlockSelected.classList.add('inline-flex');
+        if (countUnlockSel) countUnlockSel.textContent = count;
+      }
+      if (btnBulkLockSelected) {
+        btnBulkLockSelected.classList.remove('hidden');
+        btnBulkLockSelected.classList.add('inline-flex');
+        if (countLockSel) countLockSel.textContent = count;
+      }
+      if (btnClearUserSelection) btnClearUserSelection.classList.remove('hidden');
+    } else {
+      if (selectedUsersBadge) selectedUsersBadge.classList.add('hidden');
+      if (btnBulkUnlockSelected) {
+        btnBulkUnlockSelected.classList.add('hidden');
+        btnBulkUnlockSelected.classList.remove('inline-flex');
+      }
+      if (btnBulkLockSelected) {
+        btnBulkLockSelected.classList.add('hidden');
+        btnBulkLockSelected.classList.remove('inline-flex');
+      }
+      if (btnClearUserSelection) btnClearUserSelection.classList.add('hidden');
+      if (chkSelectAllUsers) chkSelectAllUsers.checked = false;
+    }
+  }
+
   async function fetchAndRenderUsers() {
     if (!usersTableBody) return;
-    usersTableBody.innerHTML = `<tr><td colspan="9" class="p-6 text-center text-slate-400">Đang nạp danh sách...</td></tr>`;
+    if (chkSelectAllUsers) chkSelectAllUsers.checked = false;
+    updateBulkSelectionUI();
+
+    usersTableBody.innerHTML = `<tr><td colspan="10" class="p-6 text-center text-slate-400">Đang nạp danh sách...</td></tr>`;
 
     const usersList = await db.adminGetUsers();
     usersTableBody.innerHTML = '';
 
     if (!usersList || usersList.length === 0) {
-      usersTableBody.innerHTML = `<tr><td colspan="9" class="p-6 text-center text-slate-400 italic">Chưa có nhân viên nào. Hãy thêm mới hoặc import từ file.</td></tr>`;
+      usersTableBody.innerHTML = `<tr><td colspan="10" class="p-6 text-center text-slate-400 italic">Chưa có nhân viên nào. Hãy thêm mới hoặc import từ file.</td></tr>`;
       return;
     }
 
@@ -172,6 +223,9 @@ document.addEventListener('DOMContentLoaded', async () => {
       const row = document.createElement('tr');
       row.className = 'hover:bg-slate-50/55 transition border-b border-slate-100';
       row.innerHTML = `
+        <td class="p-3 text-center">
+          <input type="checkbox" class="user-select-chk w-4 h-4 rounded accent-indigo-600 cursor-pointer" data-id="${u.id}" ${u.role === 'owner' ? 'disabled' : ''} />
+        </td>
         <td class="p-3 font-mono text-slate-700 text-xs">${u.employee_code}</td>
         <td class="p-3 font-bold text-slate-900">${u.full_name}</td>
         <td class="p-3">${roleBadge}</td>
@@ -195,6 +249,13 @@ document.addEventListener('DOMContentLoaded', async () => {
       usersTableBody.appendChild(row);
     });
 
+    // Checkbox items change
+    document.querySelectorAll('.user-select-chk').forEach(chk => {
+      chk.addEventListener('change', () => {
+        updateBulkSelectionUI();
+      });
+    });
+
     // Bind toggle active
     document.querySelectorAll('.toggle-active-btn').forEach(btn => {
       btn.addEventListener('click', async () => {
@@ -204,7 +265,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         fetchAndRenderUsers();
       });
     });
-
     // Bind edit
     document.querySelectorAll('.edit-user-btn').forEach(btn => {
       btn.addEventListener('click', async () => {
@@ -1117,6 +1177,352 @@ document.addEventListener('DOMContentLoaded', async () => {
     container.innerHTML = statsHtml;
   }
 
+  // ── Bulk Actions Listeners ────────────────────────────────────────────────────
+  if (chkSelectAllUsers) {
+    chkSelectAllUsers.addEventListener('change', () => {
+      const isChecked = chkSelectAllUsers.checked;
+      document.querySelectorAll('.user-select-chk:not(:disabled)').forEach(chk => {
+        chk.checked = isChecked;
+      });
+      updateBulkSelectionUI();
+    });
+  }
+
+  if (btnClearUserSelection) {
+    btnClearUserSelection.addEventListener('click', () => {
+      document.querySelectorAll('.user-select-chk').forEach(chk => { chk.checked = false; });
+      if (chkSelectAllUsers) chkSelectAllUsers.checked = false;
+      updateBulkSelectionUI();
+    });
+  }
+
+  // Mở khóa các tài khoản đã chọn
+  if (btnBulkUnlockSelected) {
+    btnBulkUnlockSelected.addEventListener('click', async () => {
+      const selectedIds = Array.from(document.querySelectorAll('.user-select-chk:checked')).map(c => c.getAttribute('data-id'));
+      if (selectedIds.length === 0) return;
+      if (!confirm('Bạn có chắc muốn MỞ KHÓA HOẠT ĐỘNG cho ' + selectedIds.length + ' tài khoản nhân viên đã chọn?')) return;
+
+      const res = await db.adminBulkUpdateUserStatus(selectedIds, true);
+      if (res && res.success) {
+        showAdminAlert('Thành công ✅', 'Đã mở khóa hoạt động cho ' + selectedIds.length + ' tài khoản nhân viên!');
+        fetchAndRenderUsers();
+      } else {
+        showAdminAlert('Lỗi', res?.message || 'Không thể mở khóa tài khoản.');
+      }
+    });
+  }
+
+  // Tạm khóa các tài khoản đã chọn
+  if (btnBulkLockSelected) {
+    btnBulkLockSelected.addEventListener('click', async () => {
+      const selectedIds = Array.from(document.querySelectorAll('.user-select-chk:checked')).map(c => c.getAttribute('data-id'));
+      if (selectedIds.length === 0) return;
+      if (!confirm('Bạn có chắc muốn TẠM KHÓA ' + selectedIds.length + ' tài khoản nhân viên đã chọn?\nNhân viên bị khóa sẽ không thể tham gia thi đấu.')) return;
+
+      const res = await db.adminBulkUpdateUserStatus(selectedIds, false);
+      if (res && res.success) {
+        showAdminAlert('Thành công ✅', 'Đã tạm khóa ' + selectedIds.length + ' tài khoản nhân viên!');
+        fetchAndRenderUsers();
+      } else {
+        showAdminAlert('Lỗi', res?.message || 'Không thể tạm khóa tài khoản.');
+      }
+    });
+  }
+
+  // Mở khóa TOÀN BỘ nhân viên
+  if (btnBulkUnlockAll) {
+    btnBulkUnlockAll.addEventListener('click', async () => {
+      if (!confirm('XÁC NHẬN: Bạn có chắc chắn muốn MỞ KHÓA HOẠT ĐỘNG cho TOÀN BỘ nhân viên trong hệ thống?')) return;
+      const res = await db.adminSetAllUsersStatus(true);
+      if (res && res.success) {
+        showAdminAlert('Thành công ✅', 'Đã mở khóa hoạt động cho tất cả nhân viên trong hệ thống!');
+        fetchAndRenderUsers();
+      } else {
+        showAdminAlert('Lỗi', res?.message || 'Không thể mở khóa toàn bộ nhân viên.');
+      }
+    });
+  }
+
+  // Tạm khóa TOÀN BỘ nhân viên
+  if (btnBulkLockAll) {
+    btnBulkLockAll.addEventListener('click', async () => {
+      if (!confirm('CẢNH BÁO: Bạn có chắc chắn muốn TẠM KHÓA TOÀN BỘ nhân viên trong hệ thống?\n(Tài khoản Quản trị viên/Chủ hệ thống sẽ không bị ảnh hưởng)')) return;
+      const res = await db.adminSetAllUsersStatus(false, user.id);
+      if (res && res.success) {
+        showAdminAlert('Thành công ✅', 'Đã tạm khóa tất cả nhân viên trong hệ thống!');
+        fetchAndRenderUsers();
+      } else {
+        showAdminAlert('Lỗi', res?.message || 'Không thể tạm khóa toàn bộ nhân viên.');
+      }
+    });
+  }
   // ── Initial render ───────────────────────────────────────────────────────────
   fetchAndRenderUsers();
+
+  // ── FLASHCARD MANAGEMENT ─────────────────────────────────────────────────────
+  const flashcardSetsContainer = document.getElementById('flashcard_sets_container');
+  const flashcardCardsBox = document.getElementById('flashcard_cards_box');
+  const selectedFcSetBadge = document.getElementById('selected_fcset_badge');
+  const selectedFcSetTitle = document.getElementById('selected_fcset_title');
+  const flashcardsList = document.getElementById('flashcards_list');
+  const btnAddFlashcardForm = document.getElementById('btn_add_flashcard_form');
+  const btnCloseFlashcardCards = document.getElementById('btn_close_flashcard_cards');
+  const addFlashcardInline = document.getElementById('add_flashcard_inline');
+  const fcQuestionInput = document.getElementById('fc_question_input');
+  const fcAnswerInput = document.getElementById('fc_answer_input');
+  const fcEditId = document.getElementById('fc_edit_id');
+  const btnSaveFlashcard = document.getElementById('btn_save_flashcard');
+  const btnCancelFlashcard = document.getElementById('btn_cancel_flashcard');
+
+  const modalFcSet = document.getElementById('modal_fcset');
+  const formFcSet = document.getElementById('form_fcset');
+  const formFcSetId = document.getElementById('form_fcset_id');
+  const formFcSetTitle = document.getElementById('form_fcset_title');
+  const formFcSetCategory = document.getElementById('form_fcset_category');
+  const formFcSetDesc = document.getElementById('form_fcset_desc');
+  const btnOpenFcSetModal = document.getElementById('btn_open_fcset_modal');
+  const btnCloseFcSetModal = document.getElementById('btn_close_fcset_modal');
+
+  let currentFcSetId = null;
+  let currentFcSetTitle = '';
+
+  if (btnOpenFcSetModal) {
+    btnOpenFcSetModal.addEventListener('click', () => {
+      formFcSetId.value = '';
+      formFcSetTitle.value = '';
+      formFcSetCategory.value = '';
+      formFcSetDesc.value = '';
+      document.getElementById('modal_fcset_title').textContent = 'Tạo Bộ Flashcard Mới';
+      modalFcSet.classList.remove('hidden');
+    });
+  }
+  if (btnCloseFcSetModal) {
+    btnCloseFcSetModal.addEventListener('click', () => modalFcSet.classList.add('hidden'));
+  }
+
+  if (formFcSet) {
+    formFcSet.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const title = formFcSetTitle.value.trim();
+      const category = formFcSetCategory.value.trim();
+      const desc = formFcSetDesc.value.trim();
+      if (!title) return;
+
+      const id = formFcSetId.value;
+      let result;
+      if (id) {
+        result = await db.adminUpdateFlashcardSet(id, { title, description: desc, category });
+      } else {
+        result = await db.adminCreateFlashcardSet(title, desc, category);
+      }
+
+      if (result.success) {
+        modalFcSet.classList.add('hidden');
+        fetchAndRenderFlashcardSets();
+      } else {
+        showAdminAlert('Lỗi', result.message || 'Không thể lưu bộ flashcard.');
+      }
+    });
+  }
+
+  async function fetchAndRenderFlashcardSets() {
+    if (!flashcardSetsContainer) return;
+    flashcardSetsContainer.innerHTML = '<div class="col-span-2 p-6 text-center text-slate-400 text-sm">Đang nạp...</div>';
+    const sets = await db.adminGetFlashcardSets();
+
+    if (!sets || sets.length === 0) {
+      flashcardSetsContainer.innerHTML = '<div class="col-span-2 p-8 text-center text-slate-400 italic text-sm">Chưa có bộ flashcard nào.</div>';
+      return;
+    }
+
+    flashcardSetsContainer.innerHTML = '';
+    sets.forEach(set => {
+      const card = document.createElement('div');
+      card.className = 'bg-white border border-slate-200 rounded-2xl p-4 flex flex-col gap-3 shadow-sm hover:shadow-md transition';
+      const activeLabel = set.active
+        ? '<span class="text-[10px] font-bold text-emerald-600">✅ Kích hoạt</span>'
+        : '<span class="text-[10px] font-bold text-slate-400">⬜ Tắt</span>';
+      const descHtml = set.description
+        ? `<p class="text-[11px] text-slate-500 mt-0.5">${set.description}</p>`
+        : '';
+      card.innerHTML = `
+        <div class="flex items-start justify-between gap-2">
+          <div class="flex-1">
+            <div class="flex items-center gap-2 mb-1">
+              <span class="text-[10px] font-bold text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full uppercase">${set.category || 'Chung'}</span>
+              <label class="flex items-center gap-1.5 cursor-pointer" title="Kích hoạt / Tắt">
+                <input type="checkbox" class="fcset-toggle-active w-3.5 h-3.5 accent-emerald-600 cursor-pointer" data-id="${set.id}" ${set.active ? 'checked' : ''}>
+                ${activeLabel}
+              </label>
+            </div>
+            <h3 class="font-bold text-slate-900 text-sm leading-snug">${set.title}</h3>
+            ${descHtml}
+          </div>
+        </div>
+        <div class="flex items-center gap-2 pt-1 border-t border-slate-100">
+          <button class="fcset-cards-btn flex-1 px-3 py-1.5 bg-indigo-50 text-indigo-700 font-bold text-xs rounded-xl hover:bg-indigo-100 transition cursor-pointer" data-id="${set.id}" data-title="${set.title}">
+            📋 Xem &amp; Sửa Thẻ
+          </button>
+          <button class="fcset-edit-btn px-3 py-1.5 bg-slate-50 border border-slate-200 text-slate-600 font-bold text-xs rounded-xl hover:bg-slate-100 transition cursor-pointer" data-id="${set.id}" data-title="${set.title}" data-category="${set.category || ''}" data-desc="${(set.description || '').replace(/"/g, '&quot;')}">
+            ✏️ Sửa
+          </button>
+          <button class="fcset-delete-btn px-3 py-1.5 bg-rose-50 border border-rose-200 text-rose-600 font-bold text-xs rounded-xl hover:bg-rose-100 transition cursor-pointer" data-id="${set.id}" data-title="${set.title}">
+            🗑️ Xóa
+          </button>
+        </div>
+      `;
+      flashcardSetsContainer.appendChild(card);
+    });
+
+    document.querySelectorAll('.fcset-toggle-active').forEach(chk => {
+      chk.addEventListener('change', async () => {
+        await db.adminToggleFlashcardSetActive(chk.dataset.id, chk.checked);
+        fetchAndRenderFlashcardSets();
+      });
+    });
+
+    document.querySelectorAll('.fcset-cards-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        currentFcSetId = btn.dataset.id;
+        currentFcSetTitle = btn.dataset.title;
+        selectedFcSetBadge.textContent = 'BỘ FLASHCARD';
+        selectedFcSetTitle.textContent = currentFcSetTitle;
+        flashcardCardsBox.classList.remove('hidden');
+        addFlashcardInline.classList.add('hidden');
+        fetchAndRenderFlashcards(currentFcSetId);
+        flashcardCardsBox.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      });
+    });
+
+    document.querySelectorAll('.fcset-edit-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        formFcSetId.value = btn.dataset.id;
+        formFcSetTitle.value = btn.dataset.title;
+        formFcSetCategory.value = btn.dataset.category;
+        formFcSetDesc.value = btn.dataset.desc;
+        document.getElementById('modal_fcset_title').textContent = 'Chỉnh Sửa Bộ Flashcard';
+        modalFcSet.classList.remove('hidden');
+      });
+    });
+
+    document.querySelectorAll('.fcset-delete-btn').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        if (!confirm(`Xóa bộ "${btn.dataset.title}"? Tất cả thẻ sẽ bị xóa.`)) return;
+        const result = await db.adminDeleteFlashcardSet(btn.dataset.id);
+        if (result.success) {
+          flashcardCardsBox.classList.add('hidden');
+          fetchAndRenderFlashcardSets();
+        } else {
+          showAdminAlert('Lỗi', result.message);
+        }
+      });
+    });
+  }
+
+  if (btnCloseFlashcardCards) {
+    btnCloseFlashcardCards.addEventListener('click', () => {
+      flashcardCardsBox.classList.add('hidden');
+      currentFcSetId = null;
+    });
+  }
+
+  if (btnAddFlashcardForm) {
+    btnAddFlashcardForm.addEventListener('click', () => {
+      fcEditId.value = '';
+      fcQuestionInput.value = '';
+      fcAnswerInput.value = '';
+      addFlashcardInline.classList.remove('hidden');
+      fcQuestionInput.focus();
+    });
+  }
+
+  if (btnCancelFlashcard) {
+    btnCancelFlashcard.addEventListener('click', () => {
+      addFlashcardInline.classList.add('hidden');
+      fcEditId.value = '';
+    });
+  }
+
+  if (btnSaveFlashcard) {
+    btnSaveFlashcard.addEventListener('click', async () => {
+      const question = fcQuestionInput.value.trim();
+      const answer = fcAnswerInput.value.trim();
+      if (!question || !answer) {
+        showAdminAlert('Thiếu thông tin', 'Vui lòng nhập cả câu hỏi và câu trả lời.');
+        return;
+      }
+      const editId = fcEditId.value;
+      let result;
+      if (editId) {
+        result = await db.adminUpdateFlashcard(editId, question, answer);
+      } else {
+        result = await db.adminCreateFlashcard(currentFcSetId, question, answer);
+      }
+      if (result.success) {
+        addFlashcardInline.classList.add('hidden');
+        fcEditId.value = '';
+        fetchAndRenderFlashcards(currentFcSetId);
+      } else {
+        showAdminAlert('Lỗi', result.message);
+      }
+    });
+  }
+
+  async function fetchAndRenderFlashcards(setId) {
+    if (!flashcardsList) return;
+    flashcardsList.innerHTML = '<div class="p-4 text-center text-slate-400 text-sm">Đang nạp...</div>';
+    const cards = await db.adminGetFlashcards(setId);
+
+    if (!cards || cards.length === 0) {
+      flashcardsList.innerHTML = '<div class="p-6 text-center text-slate-400 italic text-sm">Chưa có thẻ nào. Nhấn "Thêm Thẻ" để bắt đầu.</div>';
+      return;
+    }
+
+    flashcardsList.innerHTML = '';
+    cards.forEach((card, idx) => {
+      const item = document.createElement('div');
+      item.className = 'bg-white border border-slate-200 rounded-xl p-3 flex items-start gap-3 hover:border-indigo-200 transition';
+      item.innerHTML = `
+        <span class="w-6 h-6 rounded-lg bg-indigo-50 text-indigo-600 font-black text-[10px] flex-shrink-0 flex items-center justify-center mt-0.5">${idx + 1}</span>
+        <div class="flex-1 min-w-0">
+          <div class="grid grid-cols-2 gap-2">
+            <div>
+              <p class="text-[9px] font-bold text-slate-400 uppercase mb-0.5">Câu hỏi</p>
+              <p class="text-xs font-semibold text-slate-800 leading-snug">${card.question}</p>
+            </div>
+            <div>
+              <p class="text-[9px] font-bold text-emerald-600 uppercase mb-0.5">Câu trả lời</p>
+              <p class="text-xs font-semibold text-slate-700 leading-snug">${card.answer}</p>
+            </div>
+          </div>
+        </div>
+        <div class="flex gap-1 flex-shrink-0">
+          <button class="fc-edit-btn p-1.5 bg-slate-50 border border-slate-200 text-slate-600 rounded-lg hover:bg-slate-100 transition text-[11px] cursor-pointer" data-id="${card.id}" data-q="${card.question.replace(/"/g, '&quot;')}" data-a="${card.answer.replace(/"/g, '&quot;')}">✏️</button>
+          <button class="fc-delete-btn p-1.5 bg-rose-50 border border-rose-200 text-rose-600 rounded-lg hover:bg-rose-100 transition text-[11px] cursor-pointer" data-id="${card.id}">🗑️</button>
+        </div>
+      `;
+      flashcardsList.appendChild(item);
+    });
+
+    document.querySelectorAll('.fc-edit-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        fcEditId.value = btn.dataset.id;
+        fcQuestionInput.value = btn.dataset.q;
+        fcAnswerInput.value = btn.dataset.a;
+        addFlashcardInline.classList.remove('hidden');
+        fcQuestionInput.focus();
+      });
+    });
+
+    document.querySelectorAll('.fc-delete-btn').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        if (!confirm('Xóa thẻ này?')) return;
+        const result = await db.adminDeleteFlashcard(btn.dataset.id);
+        if (result.success) fetchAndRenderFlashcards(setId);
+        else showAdminAlert('Lỗi', result.message);
+      });
+    });
+  }
+
 });

@@ -1,0 +1,248 @@
+<!doctype html>
+<html lang="vi">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Flashcard — Đấu Trường Kiến Thức</title>
+  <link rel="stylesheet" href="/style.css" />
+  <link rel="stylesheet"
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@500;700&display=swap" />
+  <style>
+    body { background: #F9F5F0; }
+
+    .brand-strip { background: linear-gradient(90deg, #E07242, #E5853F, #677B40, #E9C691); }
+
+    /* ── Flashcard flip ── */
+    .fc-scene {
+      width: 100%;
+      max-width: 640px;
+      height: 300px;
+      perspective: 1200px;
+      cursor: pointer;
+      margin: 0 auto;
+    }
+    .fc-card {
+      width: 100%; height: 100%;
+      position: relative;
+      transform-style: preserve-3d;
+      transition: transform 0.55s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .fc-card.flipped { transform: rotateY(180deg); }
+    .fc-face {
+      position: absolute; inset: 0;
+      backface-visibility: hidden;
+      border-radius: 24px;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      padding: 32px 28px;
+      text-align: center;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.08);
+    }
+    .fc-front {
+      background: #fff;
+      border: 1.5px solid #e8e0d6;
+    }
+    .fc-back {
+      background: linear-gradient(145deg, #677B40 0%, #4f6030 100%);
+      color: #fff;
+      transform: rotateY(180deg);
+    }
+    .fc-hint {
+      position: absolute;
+      bottom: 16px; left: 0; right: 0;
+      text-align: center;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+    }
+    .fc-front .fc-hint { color: #E07242; background: #FEF0E8; border-radius: 8px; padding: 6px 16px; display: inline-block; margin: 0 auto; }
+    .fc-back .fc-hint { color: rgba(255,255,255,0.6); }
+
+    /* Progress bar */
+    .progress-bar { height: 6px; background: #e8e0d6; border-radius: 99px; overflow: hidden; }
+    .progress-fill { height: 100%; border-radius: 99px; transition: width 0.4s ease; background: linear-gradient(90deg, #E07242, #677B40); }
+
+    /* Action buttons */
+    .btn-known   { background: #ecfdf5; color: #059669; border: 1.5px solid #a7f3d0; }
+    .btn-learning { background: #fefce8; color: #d97706; border: 1.5px solid #fde68a; }
+    .btn-review  { background: #fef2f2; color: #dc2626; border: 1.5px solid #fecaca; }
+
+    .btn-known:hover   { background: #d1fae5; }
+    .btn-learning:hover { background: #fef08a; }
+    .btn-review:hover  { background: #fee2e2; }
+
+    /* Set card on home */
+    .set-card {
+      background: #fff;
+      border: 1.5px solid #e8e0d6;
+      border-radius: 20px;
+      padding: 20px;
+      transition: box-shadow 0.2s, border-color 0.2s;
+      cursor: pointer;
+    }
+    .set-card:hover { box-shadow: 0 6px 24px rgba(224,114,66,0.12); border-color: #E07242; }
+
+    /* Stat badge */
+    .stat-known   { background: #ecfdf5; color: #059669; }
+    .stat-learning { background: #fefce8; color: #d97706; }
+    .stat-review  { background: #fef2f2; color: #dc2626; }
+    .stat-new     { background: #f1f5f9; color: #64748b; }
+
+    /* Completion screen */
+    @keyframes popIn { from { opacity:0; transform: scale(0.8); } to { opacity:1; transform: scale(1); } }
+    .pop-in { animation: popIn 0.4s cubic-bezier(0.34,1.56,0.64,1) forwards; }
+  </style>
+</head>
+
+<body class="min-h-screen flex flex-col">
+
+  <!-- Brand Strip -->
+  <div class="h-1.5 w-full brand-strip"></div>
+
+  <!-- Header -->
+  <header class="bg-white border-b border-slate-200 py-4 px-6 sticky top-0 z-40 shadow-xs">
+    <div class="max-w-2xl mx-auto flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <a href="/index.html" class="w-9 h-9 rounded-xl flex items-center justify-center bg-slate-100 hover:bg-slate-200 transition text-slate-600 text-sm font-bold">←</a>
+        <div>
+          <h1 class="text-base font-black font-['Space_Grotesk'] text-slate-900 leading-tight">FLASHCARD</h1>
+          <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Học lặp lại thông minh</p>
+        </div>
+      </div>
+      <div id="header_user" class="text-xs text-slate-500 font-semibold hidden">
+        <span id="header_user_name"></span>
+      </div>
+    </div>
+  </header>
+
+  <main class="flex-1 max-w-2xl mx-auto w-full px-4 py-6">
+
+    <!-- SCREEN 1: CHỌN BỘ FLASHCARD -->
+    <div id="screen_sets">
+      <div class="mb-5">
+        <h2 class="text-xl font-black font-['Space_Grotesk'] text-slate-900">Chọn Bộ Flashcard</h2>
+        <p class="text-xs text-slate-500 mt-1">Học theo phương pháp lặp lại có chu kỳ (Spaced Repetition)</p>
+      </div>
+      <div id="sets_list" class="space-y-3">
+        <div class="p-8 text-center text-slate-400 text-sm">Đang nạp bộ flashcard...</div>
+      </div>
+    </div>
+
+    <!-- SCREEN 2: ĐANG HỌC -->
+    <div id="screen_study" class="hidden">
+      <!-- Top bar -->
+      <div class="flex items-center justify-between mb-4">
+        <button id="btn_back_to_sets" class="flex items-center gap-1.5 text-xs font-bold text-slate-500 hover:text-slate-800 transition cursor-pointer">
+          ← Quay lại
+        </button>
+        <div class="text-center">
+          <p class="text-xs font-bold text-slate-400 uppercase tracking-wider" id="study_set_name">...</p>
+          <p class="text-[10px] text-slate-400" id="study_progress_text">0 / 0</p>
+        </div>
+        <button id="btn_restart_study" class="text-xs font-bold text-indigo-600 hover:text-indigo-800 transition cursor-pointer">🔄 Bắt đầu lại</button>
+      </div>
+
+      <!-- Progress bar -->
+      <div class="progress-bar mb-6">
+        <div class="progress-fill" id="study_progress_bar" style="width: 0%"></div>
+      </div>
+
+      <!-- Flashcard (flip) -->
+      <div class="fc-scene" id="fc_scene">
+        <div class="fc-card" id="fc_card">
+          <div class="fc-face fc-front">
+            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-4">CÂU HỎI</p>
+            <p class="text-lg font-bold text-slate-900 leading-snug" id="fc_question_text">...</p>
+            <div class="fc-hint">Nhấn để xem câu trả lời 👆</div>
+          </div>
+          <div class="fc-face fc-back">
+            <p class="text-[10px] font-bold text-white/60 uppercase tracking-widest mb-4">CÂU TRẢ LỜI</p>
+            <p class="text-lg font-bold text-white leading-snug" id="fc_answer_text">...</p>
+            <div class="fc-hint">Nhấn để lật lại 🔄</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 3 Action Buttons (shown after flip) -->
+      <div id="fc_actions" class="mt-6 hidden">
+        <p class="text-center text-xs font-bold text-slate-500 mb-3 uppercase tracking-wider">Bạn nhớ đến đâu?</p>
+        <div class="grid grid-cols-3 gap-3">
+          <button id="btn_known"
+            class="btn-known font-black text-sm py-3.5 px-2 rounded-2xl transition cursor-pointer flex flex-col items-center gap-1">
+            <span class="text-2xl">✅</span>
+            <span class="text-xs font-bold">Đã thuộc</span>
+          </button>
+          <button id="btn_learning"
+            class="btn-learning font-black text-sm py-3.5 px-2 rounded-2xl transition cursor-pointer flex flex-col items-center gap-1">
+            <span class="text-2xl">🤔</span>
+            <span class="text-xs font-bold">Chưa thuộc</span>
+          </button>
+          <button id="btn_review"
+            class="btn-review font-black text-sm py-3.5 px-2 rounded-2xl transition cursor-pointer flex flex-col items-center gap-1">
+            <span class="text-2xl">📚</span>
+            <span class="text-xs font-bold">Cần học lại</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Status pills row -->
+      <div class="flex items-center justify-center gap-2 mt-4">
+        <span class="stat-known inline-flex items-center gap-1 text-[10px] font-bold px-2.5 py-1 rounded-full">
+          ✅ <span id="count_known">0</span>
+        </span>
+        <span class="stat-learning inline-flex items-center gap-1 text-[10px] font-bold px-2.5 py-1 rounded-full">
+          🤔 <span id="count_learning">0</span>
+        </span>
+        <span class="stat-review inline-flex items-center gap-1 text-[10px] font-bold px-2.5 py-1 rounded-full">
+          📚 <span id="count_review">0</span>
+        </span>
+        <span class="stat-new inline-flex items-center gap-1 text-[10px] font-bold px-2.5 py-1 rounded-full">
+          🆕 <span id="count_remaining">0</span>
+        </span>
+      </div>
+    </div>
+
+    <!-- SCREEN 3: HOÀN THÀNH -->
+    <div id="screen_done" class="hidden">
+      <div class="text-center py-12 pop-in">
+        <div class="text-6xl mb-4">🎉</div>
+        <h2 class="text-2xl font-black font-['Space_Grotesk'] text-slate-900 mb-2">Hoàn thành!</h2>
+        <p class="text-slate-500 text-sm mb-8">Bạn đã xem qua tất cả thẻ trong phiên học này.</p>
+
+        <!-- Stats summary -->
+        <div class="grid grid-cols-3 gap-3 max-w-sm mx-auto mb-8">
+          <div class="stat-known rounded-2xl p-4 text-center">
+            <p class="text-2xl font-black" id="done_known">0</p>
+            <p class="text-[10px] font-bold mt-1">Đã thuộc ✅</p>
+          </div>
+          <div class="stat-learning rounded-2xl p-4 text-center">
+            <p class="text-2xl font-black" id="done_learning">0</p>
+            <p class="text-[10px] font-bold mt-1">Chưa thuộc 🤔</p>
+          </div>
+          <div class="stat-review rounded-2xl p-4 text-center">
+            <p class="text-2xl font-black" id="done_review">0</p>
+            <p class="text-[10px] font-bold mt-1">Cần học lại 📚</p>
+          </div>
+        </div>
+
+        <div class="flex flex-col gap-3 max-w-xs mx-auto">
+          <button id="btn_study_again"
+            class="w-full py-3 px-6 rounded-2xl font-black text-sm text-white cursor-pointer transition"
+            style="background: linear-gradient(135deg, #E07242, #677B40)">
+            🔄 Học lại phiên này
+          </button>
+          <button id="btn_back_from_done"
+            class="w-full py-3 px-6 rounded-2xl font-black text-sm bg-slate-100 text-slate-700 hover:bg-slate-200 cursor-pointer transition">
+            ← Chọn bộ khác
+          </button>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <script type="module" src="/flashcard.js"></script>
+</body>
+</html>
+

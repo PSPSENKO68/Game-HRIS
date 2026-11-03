@@ -68,6 +68,12 @@
           🕒 Lịch Sử Thi Đấu
         </button>
 
+        <!-- Flashcard Manager tab -->
+        <button id="tab_flashcards_btn"
+          class="tab-btn w-full text-left px-4 py-3 rounded-2xl font-bold text-sm text-slate-600 hover:bg-slate-50 transition flex items-center gap-3 cursor-pointer">
+          🃏 Quản lý Flashcard
+        </button>
+
         <!-- Import CSV/Excel tab -->
         <button id="tab_import_btn"
           class="tab-btn w-full text-left px-4 py-3 rounded-2xl font-bold text-sm text-slate-600 hover:bg-slate-50 transition flex items-center gap-3 cursor-pointer">
@@ -124,11 +130,46 @@
             </div>
           </div>
 
+          <!-- Bulk Actions Bar -->
+          <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-slate-50 p-3.5 rounded-2xl border border-slate-200">
+            <div class="flex items-center gap-2">
+              <span class="text-xs font-bold text-slate-700">Thao tác tài khoản:</span>
+              <span id="selected_users_badge" class="hidden text-[11px] font-extrabold px-2.5 py-0.5 rounded-full bg-indigo-100 text-indigo-700">
+                Đã chọn: <span id="count_selected_users">0</span>
+              </span>
+            </div>
+            <div class="flex items-center gap-2 flex-wrap">
+              <!-- Nút theo checkbox được chọn -->
+              <button id="btn_bulk_unlock_selected" class="hidden px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl transition items-center gap-1 cursor-pointer shadow-xs">
+                🔓 Mở khóa đã chọn (<span id="count_unlock_sel">0</span>)
+              </button>
+              <button id="btn_bulk_lock_selected" class="hidden px-3 py-1.5 bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs rounded-xl transition items-center gap-1 cursor-pointer shadow-xs">
+                🔒 Tạm khóa đã chọn (<span id="count_lock_sel">0</span>)
+              </button>
+              <button id="btn_clear_user_selection" class="hidden px-2.5 py-1.5 bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold text-xs rounded-xl transition cursor-pointer">
+                Bỏ chọn
+              </button>
+
+              <div class="h-4 w-px bg-slate-300 hidden sm:block"></div>
+
+              <!-- Nút đồng loạt toàn bộ -->
+              <button id="btn_bulk_unlock_all" class="px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-300 font-bold text-xs rounded-xl transition flex items-center gap-1 cursor-pointer" title="Mở khóa hoạt động cho tất cả nhân viên">
+                🔓 Mở khóa tất cả
+              </button>
+              <button id="btn_bulk_lock_all" class="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-300 font-bold text-xs rounded-xl transition flex items-center gap-1 cursor-pointer" title="Tạm khóa tất cả nhân viên">
+                🔒 Tạm khóa tất cả
+              </button>
+            </div>
+          </div>
+
           <!-- Users search and filters -->
           <div id="user_list_wrapper" class="overflow-x-auto border border-slate-100 rounded-2xl">
             <table class="w-full text-left border-collapse text-xs">
               <thead>
                 <tr class="bg-slate-50 text-slate-400 font-black uppercase tracking-wider border-b border-slate-150">
+                  <th class="p-3 w-10 text-center">
+                    <input type="checkbox" id="chk_select_all_users" class="w-4 h-4 rounded accent-indigo-600 cursor-pointer" title="Chọn tất cả" />
+                  </th>
                   <th class="p-3">Tài khoản (SĐT/Email)</th>
                   <th class="p-3">Họ Tên</th>
                   <th class="p-3">Vai Trò</th>
@@ -318,6 +359,80 @@
             class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-6 rounded-2xl text-xs shadow-md active:scale-95 transition cursor-pointer">
             XỬ LÝ IMPORT DỮ LIỆU NGAY
           </button>
+        </section>
+
+        <!-- VIEWPORT 5: FLASHCARD MANAGER -->
+        <section id="section_flashcards"
+          class="admin-view bg-white rounded-3xl border border-slate-200 shadow-sm p-6 flex flex-col gap-6 hidden">
+          <!-- Header -->
+          <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div>
+              <h2 class="text-xl font-bold text-slate-900 font-['Space_Grotesk']">Quản Lý Flashcard</h2>
+              <p class="text-xs text-slate-500">Tạo bộ thẻ học theo phương pháp Spaced Repetition</p>
+            </div>
+            <button id="btn_open_fcset_modal"
+              class="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl shadow-md transition flex items-center gap-1.5 cursor-pointer">
+              <span>➕ TẠO BỘ FLASHCARD MỚI</span>
+            </button>
+          </div>
+
+          <!-- Flashcard Sets Grid -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4" id="flashcard_sets_container">
+            <!-- Rendered dynamically -->
+          </div>
+
+          <!-- Selected Set's Cards -->
+          <div id="flashcard_cards_box" class="hidden border border-slate-200 rounded-2xl p-5 bg-slate-50/50">
+            <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-4 border-b border-slate-200 pb-4">
+              <div>
+                <span class="text-[10px] font-bold text-indigo-600 bg-indigo-50 border border-indigo-200 px-2 py-0.5 rounded-full uppercase" id="selected_fcset_badge">BỘ FLASHCARD</span>
+                <h3 class="text-base font-extrabold text-slate-900 mt-1" id="selected_fcset_title">...</h3>
+              </div>
+              <div class="flex gap-2">
+                <button id="btn_add_flashcard_form"
+                  class="px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl transition flex items-center gap-1.5 cursor-pointer">
+                  ➕ Thêm Thẻ
+                </button>
+                <button id="btn_close_flashcard_cards"
+                  class="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold text-xs rounded-xl transition cursor-pointer">
+                  ✕ Đóng
+                </button>
+              </div>
+            </div>
+            <!-- Add Card Form (inline) -->
+            <div id="add_flashcard_inline" class="hidden bg-white border border-indigo-200 rounded-2xl p-4 mb-4">
+              <h4 class="text-xs font-bold text-indigo-700 mb-3">THÊM THẺ MỚI</h4>
+              <input type="hidden" id="fc_edit_id" />
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
+                <div>
+                  <label class="block text-[10px] font-bold text-slate-500 mb-1 uppercase">Câu Hỏi (Mặt Trước)</label>
+                  <textarea id="fc_question_input" rows="3"
+                    class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold resize-none focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    placeholder="Nhập câu hỏi hoặc thuật ngữ..."></textarea>
+                </div>
+                <div>
+                  <label class="block text-[10px] font-bold text-slate-500 mb-1 uppercase">Câu Trả Lời (Mặt Sau)</label>
+                  <textarea id="fc_answer_input" rows="3"
+                    class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold resize-none focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    placeholder="Nhập câu trả lời hoặc định nghĩa..."></textarea>
+                </div>
+              </div>
+              <div class="flex gap-2">
+                <button id="btn_save_flashcard"
+                  class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl transition cursor-pointer">
+                  💾 Lưu Thẻ
+                </button>
+                <button id="btn_cancel_flashcard"
+                  class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold text-xs rounded-xl transition cursor-pointer">
+                  Hủy
+                </button>
+              </div>
+            </div>
+            <!-- Cards List -->
+            <div id="flashcards_list" class="space-y-2 max-h-[500px] overflow-y-auto">
+              <!-- Rendered dynamically -->
+            </div>
+          </div>
         </section>
 
         <!-- VIEWPORT 4: HISTORY -->
@@ -743,6 +858,45 @@
       <div id="wrong_answers_list" class="space-y-4">
         <!-- Injected dynamically -->
       </div>
+    </div>
+  </div>
+
+  <!-- MODAL: CREATE/EDIT FLASHCARD SET -->
+  <div id="modal_fcset"
+    class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
+    <div class="bg-white rounded-3xl p-6 max-w-sm w-full shadow-2xl border border-slate-100">
+      <h3 class="text-base font-black font-['Space_Grotesk'] text-slate-900 mb-4" id="modal_fcset_title">Tạo Bộ Flashcard</h3>
+      <form id="form_fcset" class="space-y-4">
+        <input type="hidden" id="form_fcset_id" />
+        <div>
+          <label class="block text-xs font-bold text-slate-400 mb-1">Tên bộ Flashcard *</label>
+          <input type="text" id="form_fcset_title" required
+            class="block w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-bold"
+            placeholder="Ví dụ: Chính sách thưởng Q1 2025" />
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-400 mb-1">Danh mục / Phòng ban</label>
+          <input type="text" id="form_fcset_category"
+            class="block w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-bold"
+            placeholder="Ví dụ: HR, QM, Production..." />
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-400 mb-1">Mô tả ngắn</label>
+          <textarea id="form_fcset_desc" rows="2"
+            class="block w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-semibold resize-none"
+            placeholder="Mô tả nội dung bộ flashcard này..."></textarea>
+        </div>
+        <div class="flex gap-2 pt-1">
+          <button type="submit"
+            class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 rounded-xl text-xs transition cursor-pointer">
+            💾 Lưu Bộ Flashcard
+          </button>
+          <button type="button" id="btn_close_fcset_modal"
+            class="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs transition cursor-pointer">
+            Hủy
+          </button>
+        </div>
+      </form>
     </div>
   </div>
 
