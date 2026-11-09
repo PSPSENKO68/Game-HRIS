@@ -1469,6 +1469,16 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   }
 
+  function escapeHTML(str) {
+    if (!str) return '';
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
   async function fetchAndRenderFlashcards(setId) {
     if (!flashcardsList) return;
     flashcardsList.innerHTML = '<div class="p-4 text-center text-slate-400 text-sm">Đang nạp...</div>';
@@ -1486,20 +1496,20 @@ document.addEventListener('DOMContentLoaded', async () => {
       item.innerHTML = `
         <span class="w-6 h-6 rounded-lg bg-indigo-50 text-indigo-600 font-black text-[10px] flex-shrink-0 flex items-center justify-center mt-0.5">${idx + 1}</span>
         <div class="flex-1 min-w-0">
-          <div class="grid grid-cols-2 gap-2">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <p class="text-[9px] font-bold text-slate-400 uppercase mb-0.5">Câu hỏi</p>
-              <p class="text-xs font-semibold text-slate-800 leading-snug">${card.question}</p>
+              <p class="text-[9px] font-bold text-slate-400 uppercase mb-0.5">Câu hỏi (Mặt trước)</p>
+              <p class="text-xs font-semibold text-slate-800 leading-relaxed whitespace-pre-wrap break-words" style="white-space: pre-wrap;">${escapeHTML(card.question)}</p>
             </div>
             <div>
-              <p class="text-[9px] font-bold text-emerald-600 uppercase mb-0.5">Câu trả lời</p>
-              <p class="text-xs font-semibold text-slate-700 leading-snug">${card.answer}</p>
+              <p class="text-[9px] font-bold text-emerald-600 uppercase mb-0.5">Câu trả lời (Mặt sau)</p>
+              <p class="text-xs font-semibold text-slate-700 leading-relaxed whitespace-pre-wrap break-words" style="white-space: pre-wrap;">${escapeHTML(card.answer)}</p>
             </div>
           </div>
         </div>
         <div class="flex gap-1 flex-shrink-0">
-          <button class="fc-edit-btn p-1.5 bg-slate-50 border border-slate-200 text-slate-600 rounded-lg hover:bg-slate-100 transition text-[11px] cursor-pointer" data-id="${card.id}" data-q="${card.question.replace(/"/g, '&quot;')}" data-a="${card.answer.replace(/"/g, '&quot;')}">✏️</button>
-          <button class="fc-delete-btn p-1.5 bg-rose-50 border border-rose-200 text-rose-600 rounded-lg hover:bg-rose-100 transition text-[11px] cursor-pointer" data-id="${card.id}">🗑️</button>
+          <button class="fc-edit-btn p-1.5 bg-slate-50 border border-slate-200 text-slate-600 rounded-lg hover:bg-slate-100 transition text-[11px] cursor-pointer" data-id="${card.id}" title="Sửa">✏️</button>
+          <button class="fc-delete-btn p-1.5 bg-rose-50 border border-rose-200 text-rose-600 rounded-lg hover:bg-rose-100 transition text-[11px] cursor-pointer" data-id="${card.id}" title="Xóa">🗑️</button>
         </div>
       `;
       flashcardsList.appendChild(item);
@@ -1507,9 +1517,11 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     document.querySelectorAll('.fc-edit-btn').forEach(btn => {
       btn.addEventListener('click', () => {
-        fcEditId.value = btn.dataset.id;
-        fcQuestionInput.value = btn.dataset.q;
-        fcAnswerInput.value = btn.dataset.a;
+        const card = cards.find(c => c.id === btn.dataset.id);
+        if (!card) return;
+        fcEditId.value = card.id;
+        fcQuestionInput.value = card.question;
+        fcAnswerInput.value = card.answer;
         addFlashcardInline.classList.remove('hidden');
         fcQuestionInput.focus();
       });
@@ -1524,5 +1536,4 @@ document.addEventListener('DOMContentLoaded', async () => {
       });
     });
   }
-
 });
