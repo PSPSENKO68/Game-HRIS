@@ -142,7 +142,8 @@ export const db = {
     if (!user.is_active) {
       return { success: false, message: 'Tài khoản đã bị khóa hoặc chưa kích hoạt.' };
     }
-    return { success: true, user };
+    const mustChangePassword = await db.checkMustChangePassword(user);
+    return { success: true, user, mustChangePassword };
   },
 
   async getUserById(id) {
@@ -152,6 +153,118 @@ export const db = {
       .eq('id', id)
       .single();
     return data || null;
+  },
+
+  // ── 1B. RULES ĐỔI MẬT KHẨU LẦN ĐẦU (TRỪ ADMIN) ─────────────────────────
+  async getFirstLoginPwdRule() {
+    const { data, error } = await supabase
+      .from('settings')
+      .select('value')
+      .eq('key', 'require_first_login_pwd_change')
+      .limit(1);
+    if (!error && data && data.length > 0) {
+      return data[0].value !== 'false';
+    }
+    return true; // Mặc định BẬT quy tắc bắt đổi mật khẩu lần đầu
+  },
+
+  async setFirstLoginPwdRule(enabled) {
+    const { error } = await supabase
+      .from('settings')
+      .upsert({ key: 'require_first_login_pwd_change', value: enabled ? 'true' : 'false' });
+    if (error) return { success: false, message: error.message };
+    return { success: true };
+  },
+
+  async checkMustChangePassword(user) {
+    if (!user) return false;
+    const role = (user.role || 'user').toLowerCase();
+    // Miễn trừ tài khoản Admin & Owner
+    if (role === 'admin' || role === 'owner') return false;
+
+    const ruleEnabled = await db.getFirstLoginPwdRule();
+    if (!ruleEnabled) return false;
+
+    if ('must_change_password' in user && user.must_change_password === false) {
+      return false;
+    }
+
+    const { data, error } = await supabase
+      .from('settings')
+      .select('value')
+      .eq('key', `pwd_changed_${user.id}`)
+      .limit(1);
+
+    if (!error && data && data.length > 0 && data[0].value) {
+      return false;
+    }
+    return true;
+  },
+
+  async markPasswordChanged(userId) {
+    const { error } = await supabase
+      .from('settings')
+      .upsert({ key: `pwd_changed_${userId}`, value: new Date().toISOString() });
+    if (error) console.error('markPasswordChanged error:', error);
+    return !error;
+  },
+
+  async resetPasswordChangedFlag(userId) {
+    const { error } = await supabase
+      .from('settings')
+      .delete()
+      .eq('key', `pwd_changed_${userId}`);
+    if (error) console.error('resetPasswordChangedFlag error:', error);
+    return !error;
+  },
+
+  async adminGetPasswordChangedUserIds() {
+    const { data, error } = await supabase
+      .from('settings')
+      .select('key')
+      .like('key', 'pwd_changed_%');
+    if (error || !data) return new Set();
+    return new Set(data.map(row => row.key.replace('pwd_changed_', '')));
+  },
+
+  async completeFirstLoginPasswordChange(userId, newPin) {
+    const cleanPin = (newPin || '').trim();
+    if (cleanPin.length < 4) {
+      return { success: false, message: 'Mật khẩu / Mã PIN mới phải có ít nhất 4 ký tự.' };
+    }
+
+    const { data: userRow, error: fetchErr } = await supabase
+      .from('users')
+      .select('*')
+      .eq('id', userId)
+      .single();
+
+    if (fetchErr || !userRow) {
+      return { success: false, message: 'Không tìm thấy thông tin tài khoản.' };
+    }
+
+    if (userRow.pin === cleanPin) {
+      return { success: false, message: 'Mật khẩu mới không được trùng với mật khẩu hiện tại.' };
+    }
+
+    const updatePayload = { pin: cleanPin };
+    if ('must_change_password' in userRow) {
+      updatePayload.must_change_password = false;
+    }
+
+    const { data: updatedUser, error: updErr } = await supabase
+      .from('users')
+      .update(updatePayload)
+      .eq('id', userId)
+      .select('*')
+      .single();
+
+    if (updErr) {
+      return { success: false, message: updErr.message };
+    }
+
+    await db.markPasswordChanged(userId);
+    return { success: true, user: updatedUser || { ...userRow, ...updatePayload } };
   },
 
   // ── 2. KIỂM TRA NGÀY / LƯỢT CHƠI ────────────────────────────────────────
@@ -375,7 +488,7 @@ export const db = {
 
     const { error } = await supabase.from('users').insert(newUser);
     if (error) return { success: false, message: error.message };
-    return { success: true };
+    return { success: true, user: newUser };
   },
 
   async adminUpdateUser(id, updates) {
@@ -674,12 +787,12 @@ async adminDeleteUser(id) {
 
       const { data: existing } = await supabase
         .from('users')
-        .select('id, full_name, employee_code')
+        .select('id, full_name, employee_code, pin')
         .eq('employee_code', employeeCode)
         .single();
 
       if (existing) {
-        duplicates.push({ ...userData, existingId: existing.id });
+        duplicates.push({ ...userData, existingId: existing.id, existingPin: existing.pin });
       } else {
         newRows.push(userData);
       }
@@ -730,6 +843,10 @@ async adminDeleteUser(id) {
           is_active: userData.is_active,
           max_plays: userData.max_plays
         }).eq('id', userData.existingId);
+        // Nếu PIN thay đổi (ví dụ reset lại mật khẩu mặc định), yêu cầu đổi mật khẩu lại ở lần đăng nhập tới
+        if (userData.existingPin !== userData.pin) {
+          await db.resetPasswordChangedFlag(userData.existingId);
+        }
         updated++;
       }
       return { success: true, created, updated };

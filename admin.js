@@ -41,9 +41,42 @@ document.addEventListener('DOMContentLoaded', async () => {
   const formUserMaxPlays = document.getElementById('form_user_max_plays');
   const formUserScore = document.getElementById('form_user_score');
   const formUserActive = document.getElementById('form_user_active');
+  const formUserMustChangePwd = document.getElementById('form_user_must_change_pwd');
+  const wrapUserMustChangePwd = document.getElementById('wrap_user_must_change_pwd');
+  const formUserRoleSelect = document.getElementById('form_user_role');
+  let editingUserOrigPin = null;
   const btnOpenUserModal = document.getElementById('btn_open_user_modal');
   const btnCloseUserModal = document.getElementById('btn_close_user_modal');
   const usersTableBody = document.getElementById('users_table_body');
+
+  function syncMustChangePwdCheckboxForRole(roleVal) {
+    if (!formUserMustChangePwd || !wrapUserMustChangePwd) return;
+    const isPriv = roleVal === 'admin' || roleVal === 'owner';
+    if (isPriv) {
+      formUserMustChangePwd.checked = false;
+      formUserMustChangePwd.disabled = true;
+      wrapUserMustChangePwd.classList.add('opacity-50');
+    } else {
+      formUserMustChangePwd.disabled = false;
+      wrapUserMustChangePwd.classList.remove('opacity-50');
+    }
+  }
+
+  if (formUserRoleSelect) {
+    formUserRoleSelect.addEventListener('change', () => {
+      syncMustChangePwdCheckboxForRole(formUserRoleSelect.value);
+    });
+  }
+
+  if (formUserPin && formUserMustChangePwd) {
+    formUserPin.addEventListener('input', () => {
+      if (formUserId.value && editingUserOrigPin !== null && !formUserMustChangePwd.disabled) {
+        if (formUserPin.value.trim() !== editingUserOrigPin) {
+          formUserMustChangePwd.checked = true;
+        }
+      }
+    });
+  }
 
   // Bulk User Actions Elements
   const chkSelectAllUsers = document.getElementById('chk_select_all_users');
@@ -201,7 +234,10 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     usersTableBody.innerHTML = `<tr><td colspan="10" class="p-6 text-center text-slate-400">Đang nạp danh sách...</td></tr>`;
 
-    const usersList = await db.adminGetUsers();
+    const [usersList, pwdChangedSet] = await Promise.all([
+      db.adminGetUsers(),
+      db.adminGetPasswordChangedUserIds()
+    ]);
     usersTableBody.innerHTML = '';
 
     if (!usersList || usersList.length === 0) {
@@ -215,6 +251,14 @@ document.addEventListener('DOMContentLoaded', async () => {
         : u.role === 'admin'
           ? '<span class="inline-flex px-2 py-0.5 rounded-lg text-[10px] font-bold bg-indigo-100 text-indigo-800 border border-indigo-300">⚡ Admin</span>'
           : '<span class="inline-flex px-2 py-0.5 rounded-lg text-[10px] font-bold bg-slate-100 text-slate-600 border border-slate-200">👤 Nhân viên</span>';
+
+      const isPriv = u.role === 'admin' || u.role === 'owner';
+      const hasChangedPwd = isPriv || pwdChangedSet.has(u.id);
+      const pwdStatusBadge = isPriv
+        ? '<span class="block text-[9px] text-indigo-500 font-bold mt-0.5">Miễn trừ Admin</span>'
+        : hasChangedPwd
+          ? '<span class="block text-[9px] text-emerald-600 font-bold mt-0.5">✓ Đã đổi MK</span>'
+          : '<span class="block text-[9px] text-amber-600 font-bold mt-0.5">⏳ Chờ đổi MK</span>';
 
       const limitDisplay = (u.max_plays !== null && u.max_plays !== undefined)
         ? `<span class="px-2 py-0.5 rounded-lg bg-orange-50 text-orange-600 border border-orange-200 font-bold text-[11px]">${u.max_plays} lượt</span>`
@@ -230,7 +274,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         <td class="p-3 font-bold text-slate-900">${u.full_name}</td>
         <td class="p-3">${roleBadge}</td>
         <td class="p-3 text-slate-500 text-xs">${u.department || '—'}</td>
-        <td class="p-3 font-mono text-slate-400 text-xs">••••</td>
+        <td class="p-3 font-mono text-slate-400 text-xs">••••${pwdStatusBadge}</td>
         <td class="p-3 text-center">${limitDisplay}</td>
         <td class="p-3 text-center font-extrabold text-indigo-600 font-['Space_Grotesk']">${u.total_score || 0}đ</td>
         <td class="p-3 text-center">
@@ -276,6 +320,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           formUserFullName.value = targetU.full_name;
           formUserDept.value = targetU.department || '';
           formUserPin.value = targetU.pin;
+          editingUserOrigPin = targetU.pin;
           formUserMaxPlays.value = (targetU.max_plays !== null && targetU.max_plays !== undefined) ? targetU.max_plays : '';
           if (formUserScore) formUserScore.value = targetU.total_score || 0;
           formUserActive.checked = targetU.is_active;
@@ -293,6 +338,11 @@ document.addEventListener('DOMContentLoaded', async () => {
               roleSelect.disabled = false;
               roleSelect.querySelector('option[value="owner"]').setAttribute('disabled', '');
             }
+          }
+
+          syncMustChangePwdCheckboxForRole(targetU.role || 'user');
+          if (formUserMustChangePwd && targetU.role !== 'admin' && targetU.role !== 'owner') {
+            formUserMustChangePwd.checked = !pwdChangedSet.has(targetU.id);
           }
 
           document.getElementById('modal_user_title').textContent = 'Chỉnh sửa nhân sự';
@@ -321,6 +371,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   if (btnOpenUserModal) {
     btnOpenUserModal.addEventListener('click', () => {
       formUserId.value = '';
+      editingUserOrigPin = null;
       formUser.reset();
       if (formUserMaxPlays) formUserMaxPlays.value = '';
       if (formUserScore) formUserScore.value = '0';
@@ -331,6 +382,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         roleSelect.disabled = false;
         roleSelect.querySelector('option[value="owner"]').setAttribute('disabled', '');
       }
+      syncMustChangePwdCheckboxForRole('user');
+      if (formUserMustChangePwd) formUserMustChangePwd.checked = true;
       document.getElementById('modal_user_title').textContent = 'Thêm Nhân Viên Mới';
       modalUser.classList.remove('hidden');
     });
@@ -369,17 +422,30 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
 
       let result;
+      let savedUserId = uId;
       if (uId) {
         result = await db.adminUpdateUser(uId, userData);
         if (result.success) showAdminAlert('Cập nhật thành công ✅', `Đã cập nhật tài khoản "${userData.full_name}".`);
         else showAdminAlert('Lỗi', result.message || 'Không thể cập nhật.');
       } else {
         result = await db.adminCreateUser(userData);
-        if (result.success) showAdminAlert('Thêm thành công ✅', `Đã tạo tài khoản mới cho "${userData.full_name}".`);
-        else showAdminAlert('Lỗi', result.message || 'Không thể tạo tài khoản.');
+        if (result.success) {
+          savedUserId = result.user?.id;
+          showAdminAlert('Thêm thành công ✅', `Đã tạo tài khoản mới cho "${userData.full_name}".`);
+        } else {
+          showAdminAlert('Lỗi', result.message || 'Không thể tạo tài khoản.');
+        }
       }
 
       if (result.success) {
+        const effRole = selectedRole || (roleSelect ? roleSelect.value : 'user');
+        if (savedUserId && effRole !== 'admin' && effRole !== 'owner' && formUserMustChangePwd) {
+          if (formUserMustChangePwd.checked) {
+            await db.resetPasswordChangedFlag(savedUserId);
+          } else {
+            await db.markPasswordChanged(savedUserId);
+          }
+        }
         modalUser.classList.add('hidden');
         fetchAndRenderUsers();
       }
@@ -939,6 +1005,40 @@ document.addEventListener('DOMContentLoaded', async () => {
       const result = await db.updateDailyLimit(val);
       if (result.success) showAdminAlert('Đã lưu ✅', `Giới hạn lượt chơi chung: ${val} lượt/ngày.`);
       else showAdminAlert('Lỗi', result.message || 'Không thể lưu.');
+    });
+  }
+
+  // ── 5B. SECURITY RULE: BẮT ĐỔI MẬT KHẨU LẦN ĐẦU (TRỪ ADMIN) ─────────────
+  const chkRuleFirstLoginPwd = document.getElementById('chk_rule_first_login_pwd');
+  const ruleFirstLoginLabel = document.getElementById('rule_first_login_label');
+
+  function updateRuleFirstLoginUI(enabled) {
+    if (chkRuleFirstLoginPwd) chkRuleFirstLoginPwd.checked = enabled;
+    if (ruleFirstLoginLabel) {
+      ruleFirstLoginLabel.textContent = enabled ? 'Đang BẬT' : 'Đang TẮT';
+      ruleFirstLoginLabel.className = enabled
+        ? 'text-xs font-extrabold text-emerald-700'
+        : 'text-xs font-extrabold text-slate-400';
+    }
+  }
+
+  if (chkRuleFirstLoginPwd) {
+    db.getFirstLoginPwdRule().then(updateRuleFirstLoginUI);
+    chkRuleFirstLoginPwd.addEventListener('change', async () => {
+      const enabled = chkRuleFirstLoginPwd.checked;
+      const res = await db.setFirstLoginPwdRule(enabled);
+      if (res.success) {
+        updateRuleFirstLoginUI(enabled);
+        showAdminAlert(
+          'Đã cập nhật Rules ✅',
+          enabled
+            ? 'Đã BẬT quy tắc bắt buộc người dùng đổi mật khẩu khi đăng nhập lần đầu (trừ Admin).'
+            : 'Đã TẮT quy tắc bắt buộc người dùng đổi mật khẩu khi đăng nhập lần đầu.'
+        );
+      } else {
+        updateRuleFirstLoginUI(!enabled);
+        showAdminAlert('Lỗi', res.message || 'Không thể lưu cấu hình Rules.');
+      }
     });
   }
 

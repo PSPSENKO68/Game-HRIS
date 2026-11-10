@@ -14,6 +14,12 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
   const user = JSON.parse(sessionUser);
 
+  if (await db.checkMustChangePassword(user)) {
+    sessionStorage.removeItem('current_user');
+    window.location.replace('/login.html');
+    return;
+  }
+
   // Get elements
   const scoreEarned = document.getElementById('score_earned');
   const correctCounter = document.getElementById('correct_counter');

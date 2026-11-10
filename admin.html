@@ -130,6 +130,23 @@
             </div>
           </div>
 
+          <!-- Security Rules configuration -->
+          <div
+            class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-amber-50/60 p-4 rounded-2xl border border-amber-200/70">
+            <div>
+              <p class="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                <span>🔐</span>
+                <span>Quy tắc đăng nhập lần đầu (Rules)</span>
+              </p>
+              <p class="text-[11px] text-slate-500 mt-0.5">Bắt buộc nhân viên đổi mật khẩu / mã PIN khi đăng nhập lần đầu tiên (trừ tài khoản Admin & Owner)</p>
+            </div>
+            <label class="inline-flex items-center gap-2.5 cursor-pointer select-none bg-white px-3.5 py-2 rounded-xl border border-amber-200 shadow-xs">
+              <input type="checkbox" id="chk_rule_first_login_pwd" checked
+                class="w-4 h-4 rounded accent-[#E07242] cursor-pointer" />
+              <span id="rule_first_login_label" class="text-xs font-extrabold text-emerald-700">Đang BẬT</span>
+            </label>
+          </div>
+
           <!-- Bulk Actions Bar -->
           <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-slate-50 p-3.5 rounded-2xl border border-slate-200">
             <div class="flex items-center gap-2">
@@ -505,7 +522,7 @@
   <!-- FLOATING MODAL 1: ADD/EDIT USER FORM -->
   <div id="modal_user"
     class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
-    <div class="bg-white rounded-3xl p-6 max-w-sm w-full shadow-2xl border border-slate-100">
+    <div class="bg-white rounded-3xl p-6 max-w-sm w-full max-h-[90vh] overflow-y-auto shadow-2xl border border-slate-100">
       <h3 class="text-base font-black font-['Space_Grotesk'] text-slate-900 mb-4" id="modal_user_title">Thêm Nhân Viên
       </h3>
       <form id="form_user" class="space-y-4">
@@ -573,6 +590,17 @@
             class="w-4 h-4 rounded border-slate-300 text-indigo-600" />
           <label for="form_user_active" class="text-xs font-semibold text-slate-600">Bật trạng thái Hoạt Động
             (is_active)</label>
+        </div>
+
+        <div id="wrap_user_must_change_pwd" class="flex items-start space-x-2 bg-amber-50 p-2.5 rounded-xl border border-amber-200/70">
+          <input type="checkbox" id="form_user_must_change_pwd" checked
+            class="w-4 h-4 mt-0.5 rounded border-slate-300 accent-[#E07242] cursor-pointer" />
+          <div>
+            <label for="form_user_must_change_pwd" class="text-xs font-bold text-slate-700 cursor-pointer block">
+              Bắt buộc đổi mật khẩu ở lần đăng nhập tới
+            </label>
+            <p class="text-[10px] text-slate-500">Không áp dụng với vai trò Admin / Owner.</p>
+          </div>
         </div>
 
         <div class="grid grid-cols-2 gap-3 pt-3">

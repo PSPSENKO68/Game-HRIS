@@ -30,10 +30,21 @@ document.addEventListener('DOMContentLoaded', async () => {
   const btnLogout = document.getElementById('btn_logout');
 
 
-  // Làm mới dữ liệu user từ DB
+  // Làm mới dữ liệu user từ DB & kiểm tra rule đổi mật khẩu lần đầu
   try {
     const updatedUser = await db.getUserById(user.id);
     if (updatedUser) {
+      if (!updatedUser.is_active) {
+        sessionStorage.removeItem('current_user');
+        window.location.replace('/login.html');
+        return;
+      }
+      const mustChange = await db.checkMustChangePassword(updatedUser);
+      if (mustChange) {
+        sessionStorage.removeItem('current_user');
+        window.location.replace('/login.html');
+        return;
+      }
       user = updatedUser;
       sessionStorage.setItem('current_user', JSON.stringify(user));
     }
@@ -115,8 +126,12 @@ document.addEventListener('DOMContentLoaded', async () => {
           pin: newPin
         };
 
+        const isPinChanged = newPin !== user.pin;
         const result = await db.adminUpdateUser(user.id, payload);
         if (result && result.success) {
+          if (isPinChanged) {
+            await db.markPasswordChanged(user.id);
+          }
           user = { ...user, ...payload };
           sessionStorage.setItem('current_user', JSON.stringify(user));
 

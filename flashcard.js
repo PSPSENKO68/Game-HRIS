@@ -11,6 +11,12 @@ document.addEventListener('DOMContentLoaded', async () => {
   if (!sessionUser) { window.location.replace('/login.html'); return; }
   const user = JSON.parse(sessionUser);
 
+  if (await db.checkMustChangePassword(user)) {
+    sessionStorage.removeItem('current_user');
+    window.location.replace('/login.html');
+    return;
+  }
+
   // Header user info
   const headerUser = document.getElementById('header_user');
   const headerUserName = document.getElementById('header_user_name');

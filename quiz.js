@@ -14,6 +14,12 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
   const user = JSON.parse(sessionUser);
 
+  if (await db.checkMustChangePassword(user)) {
+    sessionStorage.removeItem('current_user');
+    window.location.replace('/login.html');
+    return;
+  }
+
   // 2. Quiz ID validation
   const quizId = sessionStorage.getItem('current_quiz_id');
   if (!quizId) {
