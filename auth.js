@@ -37,7 +37,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       const pin = pinInput.value.trim();
 
       if (!employeeCode || !pin) {
-        showError('Vui lòng nhập đầy đủ Số điện thoại và mã PIN.');
+        showError('Vui lòng nhập đầy đủ Họ và tên và mã PIN.');
         return;
       }
 

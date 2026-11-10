@@ -111,22 +111,38 @@ export const db = {
   // ── 1. AUTH ──────────────────────────────────────────────────────────────
   async login(employeeCode, pin) {
     const code = (employeeCode || '').trim();
-    const { data, error } = await supabase
+    const cleanPin = (pin || '').trim();
+
+    // 1. Tìm theo employee_code (SĐT / email / mã nhân viên)
+    let { data: users, error } = await supabase
       .from('users')
       .select('*')
       .eq('employee_code', code)
-      .single();
+      .limit(1);
 
-    if (error || !data) {
+    // 2. Nếu không thấy, tìm theo Họ và tên (full_name) không phân biệt hoa thường
+    if (!users || users.length === 0) {
+      const res = await supabase
+        .from('users')
+        .select('*')
+        .ilike('full_name', code)
+        .limit(1);
+      users = res.data;
+      error = res.error;
+    }
+
+    const user = users && users.length > 0 ? users[0] : null;
+
+    if (error || !user) {
       return { success: false, message: 'Tài khoản không tồn tại trong hệ thống.' };
     }
-    if (data.pin !== pin.trim()) {
+    if (user.pin !== cleanPin) {
       return { success: false, message: 'Mật khẩu / Mã PIN không đúng.' };
     }
-    if (!data.is_active) {
+    if (!user.is_active) {
       return { success: false, message: 'Tài khoản đã bị khóa hoặc chưa kích hoạt.' };
     }
-    return { success: true, user: data };
+    return { success: true, user };
   },
 
   async getUserById(id) {
@@ -854,7 +870,18 @@ async adminDeleteUser(id) {
       .eq('set_id', setId)
       .order('created_at', { ascending: true });
     if (error) return [];
-    return data || [];
+    const list = data || [];
+    // Thứ tự tự nhiên: nếu câu hỏi bắt đầu bằng số (1, 2, 10...), sắp xếp theo số,
+    // nếu không thì theo thứ tự tạo created_at
+    list.sort((a, b) => {
+      const numA = parseInt((a.question || '').match(/^\s*(\d+)/)?.[1]);
+      const numB = parseInt((b.question || '').match(/^\s*(\d+)/)?.[1]);
+      if (!isNaN(numA) && !isNaN(numB)) {
+        return numA - numB;
+      }
+      return new Date(a.created_at || 0) - new Date(b.created_at || 0);
+    });
+    return list;
   },
 
   async adminCreateFlashcard(setId, question, answer) {
@@ -890,12 +917,18 @@ async adminDeleteUser(id) {
     if (!setResult.success) return setResult;
     const setId = setResult.set.id;
     let importedCount = 0;
-    for (const row of rows) {
+    const baseTime = Date.now();
+    for (let i = 0; i < rows.length; i++) {
+      const row = rows[i];
       const question = (row['Cau hoi'] || row['question'] || row['Question'] || row['front'] || '').trim();
       const answer = (row['Cau tra loi'] || row['answer'] || row['Answer'] || row['back'] || '').trim();
       if (!question || !answer) continue;
       const { error } = await supabase.from('flashcards').insert({
-        id: genId('fc'), set_id: setId, question, answer, created_at: new Date().toISOString()
+        id: genId('fc'),
+        set_id: setId,
+        question,
+        answer,
+        created_at: new Date(baseTime + i * 100).toISOString()
       });
       if (!error) importedCount++;
     }
@@ -916,6 +949,18 @@ async adminDeleteUser(id) {
     const { data: cards, error } = await supabase
       .from('flashcards').select('*').eq('set_id', setId).order('created_at', { ascending: true });
     if (error || !cards) return [];
+
+    // Thứ tự tự nhiên: nếu câu hỏi bắt đầu bằng số (1, 2, 10...), sắp xếp theo số,
+    // nếu không thì theo thứ tự tạo created_at
+    cards.sort((a, b) => {
+      const numA = parseInt((a.question || '').match(/^\s*(\d+)/)?.[1]);
+      const numB = parseInt((b.question || '').match(/^\s*(\d+)/)?.[1]);
+      if (!isNaN(numA) && !isNaN(numB)) {
+        return numA - numB;
+      }
+      return new Date(a.created_at || 0) - new Date(b.created_at || 0);
+    });
+
     const cardIds = cards.map(c => c.id);
     const { data: progress } = await supabase
       .from('flashcard_progress').select('*').eq('user_id', userId).in('flashcard_id', cardIds);
@@ -931,13 +976,7 @@ async adminDeleteUser(id) {
         review_count: prog?.review_count || 0
       };
     });
-    const priority = { 'review': 0, 'learning': 1, 'new': 2, 'known': 3 };
-    enriched.sort((a, b) => {
-      const pa = priority[a.status] ?? 2;
-      const pb = priority[b.status] ?? 2;
-      if (pa !== pb) return pa - pb;
-      return a.next_review - b.next_review;
-    });
+    // Giữ nguyên thứ tự câu hỏi gốc, không xáo trộn thứ tự theo spaced repetition
     return enriched;
   },
 

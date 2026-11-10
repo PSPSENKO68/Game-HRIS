@@ -20,10 +20,11 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   // ── State ────────────────────────────────────────────────────────────────
-  let cards = [];          // Danh sách thẻ hiện tại (đã sắp xếp theo spaced repetition)
+  let cards = [];          // Danh sách thẻ hiện tại
   let currentIdx = 0;
   let isFlipped = false;
   let sessionStats = { known: 0, learning: 0, review: 0 };
+  let sessionCardRatings = {}; // Ghi nhớ đánh giá của từng thẻ { [cardId]: status }
   let currentSetId = null;
   let currentSetName = '';
 
@@ -38,6 +39,12 @@ document.addEventListener('DOMContentLoaded', async () => {
   const fcQuestionTxt = document.getElementById('fc_question_text');
   const fcAnswerTxt   = document.getElementById('fc_answer_text');
   const fcActions     = document.getElementById('fc_actions');
+
+  const btnPrevCard   = document.getElementById('btn_prev_card');
+  const btnToggleFlip = document.getElementById('btn_toggle_flip');
+  const btnNextCard   = document.getElementById('btn_next_card');
+  const flipBtnLabel  = document.getElementById('flip_btn_label');
+  const nextBtnLabel  = document.getElementById('next_btn_label');
 
   const studySetName  = document.getElementById('study_set_name');
   const studyProgText = document.getElementById('study_progress_text');
@@ -138,6 +145,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     currentSetName = setName;
     currentIdx = 0;
     sessionStats = { known: 0, learning: 0, review: 0 };
+    sessionCardRatings = {};
     isFlipped = false;
 
     cards = await db.getFlashcardsForStudy(user.id, setId);
@@ -168,37 +176,93 @@ document.addEventListener('DOMContentLoaded', async () => {
     isFlipped = false;
     fcCard.classList.remove('flipped');
     fcActions.classList.add('hidden');
+    if (flipBtnLabel) flipBtnLabel.textContent = 'Lật đáp án';
 
-    // Update progress
-    const progress = Math.round((currentIdx / cards.length) * 100);
+    // Cập nhật trạng thái nút điều hướng trái / phải
+    if (btnPrevCard) {
+      btnPrevCard.disabled = (currentIdx === 0);
+    }
+    if (btnNextCard && nextBtnLabel) {
+      if (currentIdx === cards.length - 1) {
+        nextBtnLabel.textContent = 'Xem kết quả';
+      } else {
+        nextBtnLabel.textContent = 'Câu sau';
+      }
+      btnNextCard.disabled = false;
+    }
+
+    // Update progress bar & counter
+    const progress = Math.round(((currentIdx + 1) / cards.length) * 100);
     studyProgBar.style.width = progress + '%';
     studyProgText.textContent = `${currentIdx + 1} / ${cards.length}`;
+
+    updateStats();
   }
 
   // ── FLIP THẺ ─────────────────────────────────────────────────────────────
-  fcScene.addEventListener('click', () => {
+  function toggleFlip() {
     isFlipped = !isFlipped;
     fcCard.classList.toggle('flipped', isFlipped);
     if (isFlipped) {
-      // Show action buttons after a short delay
-      setTimeout(() => fcActions.classList.remove('hidden'), 300);
+      if (flipBtnLabel) flipBtnLabel.textContent = 'Lật câu hỏi';
+      setTimeout(() => fcActions.classList.remove('hidden'), 250);
     } else {
+      if (flipBtnLabel) flipBtnLabel.textContent = 'Lật đáp án';
       fcActions.classList.add('hidden');
     }
-  });
+  }
 
-  // ── XỬ LÝ 3 NÚT ─────────────────────────────────────────────────────────
+  fcScene.addEventListener('click', toggleFlip);
+  if (btnToggleFlip) {
+    btnToggleFlip.addEventListener('click', (e) => {
+      e.stopPropagation();
+      toggleFlip();
+    });
+  }
+
+  // ── ĐIỀU HƯỚNG TRÁI / PHẢI ───────────────────────────────────────────────
+  function goToPrevCard() {
+    if (currentIdx > 0) {
+      currentIdx--;
+      showCard();
+    }
+  }
+
+  function goToNextCard() {
+    if (currentIdx < cards.length - 1) {
+      currentIdx++;
+      showCard();
+    } else {
+      showDone();
+    }
+  }
+
+  if (btnPrevCard) btnPrevCard.addEventListener('click', goToPrevCard);
+  if (btnNextCard) btnNextCard.addEventListener('click', goToNextCard);
+
+  // ── XỬ LÝ 3 NÚT ĐÁNH GIÁ (ĐÃ THUỘC / CHƯA THUỘC / CẦN HỌC LẠI) ─────────
   async function handleAction(status) {
+    if (!cards || cards.length === 0 || currentIdx >= cards.length) return;
     const card = cards[currentIdx];
-    // Lưu tiến độ
+
+    // Lưu tiến độ vào cơ sở dữ liệu
     await db.saveFlashcardProgress(user.id, card.id, status);
 
-    // Update session stats
+    // Cập nhật thống kê phiên học (tránh trùng lặp nếu lật lại đổi đánh giá)
+    const prevStatus = sessionCardRatings[card.id];
+    if (prevStatus && sessionStats[prevStatus] > 0) {
+      sessionStats[prevStatus]--;
+    }
     sessionStats[status]++;
+    sessionCardRatings[card.id] = status;
     updateStats();
 
-    currentIdx++;
-    showCard();
+    if (currentIdx < cards.length - 1) {
+      currentIdx++;
+      showCard();
+    } else {
+      showDone();
+    }
   }
 
   btnKnown.addEventListener('click',    () => handleAction('known'));
@@ -210,7 +274,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     countKnown.textContent    = sessionStats.known;
     countLearning.textContent = sessionStats.learning;
     countReview.textContent   = sessionStats.review;
-    countRemaining.textContent = Math.max(0, cards.length - currentIdx - 1);
+    const ratedCount = Object.keys(sessionCardRatings).length;
+    countRemaining.textContent = Math.max(0, cards.length - ratedCount);
   }
 
   // ── MÀN HÌNH HOÀN THÀNH ──────────────────────────────────────────────────
@@ -240,14 +305,19 @@ document.addEventListener('DOMContentLoaded', async () => {
     loadSets();
   });
 
-  // ── KEYBOARD SHORTCUTS ───────────────────────────────────────────────────
+  // ── KEYBOARD SHORTCUTS (HỖ TRỢ MŨI TÊN TRÁI / PHẢI) ─────────────────────
   document.addEventListener('keydown', (e) => {
     if (screenStudy.classList.contains('hidden')) return;
     if (e.key === ' ' || e.key === 'Enter') {
       e.preventDefault();
-      fcScene.click();
-    }
-    if (isFlipped) {
+      toggleFlip();
+    } else if (e.key === 'ArrowLeft') {
+      e.preventDefault();
+      goToPrevCard();
+    } else if (e.key === 'ArrowRight') {
+      e.preventDefault();
+      goToNextCard();
+    } else if (isFlipped) {
       if (e.key === '1') handleAction('known');
       if (e.key === '2') handleAction('learning');
       if (e.key === '3') handleAction('review');
