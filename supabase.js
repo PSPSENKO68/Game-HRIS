@@ -1128,5 +1128,371 @@ async adminDeleteUser(id) {
     (progress || []).forEach(p => { if (stats[p.status] !== undefined) stats[p.status]++; });
     stats.new = Math.max(0, cards.length - (stats.known + stats.learning + stats.review));
     return stats;
+  },
+
+  // ── 14. BUSINESS DAY 2026: QR CHECK-IN & SỰ KIỆN ĐIỂM DANH ───────────────
+
+  async adminGetAttendanceUsers(filter = {}) {
+    let query = supabase.from('attendance_users').select('*');
+
+    if (filter.status === 'attended') {
+      query = query.eq('is_attended', true);
+    } else if (filter.status === 'unattended') {
+      query = query.eq('is_attended', false);
+    }
+
+    if (filter.department && filter.department !== 'all') {
+      query = query.eq('department', filter.department);
+    }
+
+    if (filter.division && filter.division !== 'all') {
+      query = query.eq('division', filter.division);
+    }
+
+    query = query.order('stt', { ascending: true, nullsFirst: false });
+    const { data, error } = await query;
+    if (error) {
+      console.error('adminGetAttendanceUsers error:', error);
+      return [];
+    }
+    let list = data || [];
+
+    if (filter.search) {
+      const q = filter.search.toLowerCase().trim();
+      list = list.filter(u =>
+        (u.full_name || '').toLowerCase().includes(q) ||
+        (u.employee_code || '').toLowerCase().includes(q) ||
+        (u.department || '').toLowerCase().includes(q) ||
+        (u.position || '').toLowerCase().includes(q)
+      );
+    }
+    return list;
+  },
+
+  async adminGetAttendanceStats() {
+    const { data, error } = await supabase
+      .from('attendance_users')
+      .select('is_attended, department, division');
+
+    if (error || !data) {
+      return { total: 0, attended: 0, unattended: 0, attendedPct: 0, departments: [], divisions: [] };
+    }
+
+    const total = data.length;
+    const attended = data.filter(u => u.is_attended).length;
+    const unattended = total - attended;
+    const attendedPct = total > 0 ? Math.round((attended / total) * 100) : 0;
+
+    const deptSet = new Set();
+    const divSet = new Set();
+    data.forEach(u => {
+      if (u.department) deptSet.add(u.department);
+      if (u.division) divSet.add(u.division);
+    });
+
+    return {
+      total,
+      attended,
+      unattended,
+      attendedPct,
+      departments: Array.from(deptSet).sort(),
+      divisions: Array.from(divSet).sort()
+    };
+  },
+
+  async _assignLuckyNumber() {
+    const { data: users } = await supabase
+      .from('attendance_users')
+      .select('lucky_number')
+      .not('lucky_number', 'is', null);
+
+    const taken = new Set((users || []).map(u => u.lucky_number));
+
+    // Dải số may mắn 3 chữ số từ 101 đến 999
+    const available = [];
+    for (let n = 101; n <= 999; n++) {
+      if (!taken.has(n)) available.push(n);
+    }
+
+    if (available.length === 0) {
+      for (let n = 1000; n <= 9999; n++) {
+        if (!taken.has(n)) { available.push(n); break; }
+      }
+    }
+
+    const randomIdx = Math.floor(Math.random() * available.length);
+    return available[randomIdx];
+  },
+
+  async adminCheckInQR(qrInput) {
+    const code = (qrInput || '').trim();
+    if (!code) return { success: false, reason: 'empty', message: 'Mã QR trống!' };
+
+    // 1. Tìm theo qr_code_data trước
+    let { data: users } = await supabase
+      .from('attendance_users')
+      .select('*')
+      .eq('qr_code_data', code)
+      .limit(1);
+
+    // 2. Nếu không thấy, tìm theo MSNV (phòng hờ nhập MSNV trực tiếp)
+    if (!users || users.length === 0) {
+      const res = await supabase
+        .from('attendance_users')
+        .select('*')
+        .ilike('employee_code', code)
+        .limit(1);
+      users = res.data;
+    }
+
+    const user = users && users.length > 0 ? users[0] : null;
+
+    if (!user) {
+      return { success: false, reason: 'not_found', message: 'Không tìm thấy nhân viên/khách mời với mã này!' };
+    }
+
+    if (user.is_attended) {
+      const timeStr = user.attended_at ? new Date(user.attended_at).toLocaleTimeString('vi-VN') : '';
+      return {
+        success: false,
+        reason: 'already_attended',
+        user,
+        message: `Mã này ĐÃ ĐƯỢC ĐIỂM DANH lúc ${timeStr} với Số may mắn: #${user.lucky_number}`
+      };
+    }
+
+    // 3. Chưa điểm danh → cấp số may mắn & ghi nhận
+    const luckyNumber = await this._assignLuckyNumber();
+    const now = new Date().toISOString();
+
+    const { data: updated, error: updErr } = await supabase
+      .from('attendance_users')
+      .update({
+        is_attended: true,
+        attended_at: now,
+        lucky_number: luckyNumber
+      })
+      .eq('id', user.id)
+      .select('*')
+      .single();
+
+    if (updErr) {
+      return { success: false, reason: 'error', message: updErr.message };
+    }
+
+    return {
+      success: true,
+      user: updated,
+      luckyNumber
+    };
+  },
+
+  async adminManualCheckIn(userId) {
+    const { data: user, error } = await supabase
+      .from('attendance_users')
+      .select('*')
+      .eq('id', userId)
+      .single();
+
+    if (error || !user) {
+      return { success: false, message: 'Không tìm thấy nhân viên.' };
+    }
+
+    if (user.is_attended) {
+      return { success: false, message: `Nhân viên "${user.full_name}" đã điểm danh trước đó với số #${user.lucky_number}.` };
+    }
+
+    const luckyNumber = await this._assignLuckyNumber();
+    const now = new Date().toISOString();
+
+    const { data: updated, error: updErr } = await supabase
+      .from('attendance_users')
+      .update({
+        is_attended: true,
+        attended_at: now,
+        lucky_number: luckyNumber
+      })
+      .eq('id', userId)
+      .select('*')
+      .single();
+
+    if (updErr) return { success: false, message: updErr.message };
+    return { success: true, user: updated, luckyNumber };
+  },
+
+  async adminCreateAttendanceUser(userData) {
+    const rawCode = (userData.employee_code || '').trim();
+    let employeeCode = rawCode;
+
+    // Nếu không nhập mã (ví dụ khách mời), tự động sinh KM.xxx
+    if (!employeeCode) {
+      const { data: allUsers } = await supabase.from('attendance_users').select('employee_code');
+      const kmCodes = (allUsers || [])
+        .map(u => u.employee_code)
+        .filter(c => /^KM\.\d+$/i.test(c))
+        .map(c => parseInt(c.replace(/^KM\./i, '')))
+        .filter(n => !isNaN(n));
+      const nextKm = (kmCodes.length > 0 ? Math.max(...kmCodes) : 0) + 1;
+      employeeCode = 'KM.' + String(nextKm).padStart(3, '0');
+    }
+
+    // Kiểm tra trùng mã
+    const { data: existing } = await supabase
+      .from('attendance_users')
+      .select('id')
+      .eq('employee_code', employeeCode)
+      .limit(1);
+
+    if (existing && existing.length > 0) {
+      return { success: false, message: `Mã "${employeeCode}" đã tồn tại trong danh sách sự kiện!` };
+    }
+
+    const { count } = await supabase.from('attendance_users').select('*', { count: 'exact', head: true });
+    const nextStt = (count || 0) + 1;
+
+    const cleanCode = employeeCode.replace(/[^A-Za-z0-9]/g, '');
+    const secret = Math.random().toString(36).substring(2, 8).toUpperCase();
+    const qrCodeData = `HABD26_${cleanCode}_${secret}`;
+
+    const newObj = {
+      id: genId('att'),
+      stt: nextStt,
+      employee_code: employeeCode,
+      full_name: (userData.full_name || '').trim(),
+      email: (userData.email || '').trim(),
+      position: (userData.position || 'Khách mời').trim(),
+      department: (userData.department || 'Khách mời').trim(),
+      sub_department: (userData.sub_department || '').trim(),
+      division: (userData.division || 'Khách mời').trim(),
+      qr_code_data: qrCodeData,
+      is_attended: false,
+      attended_at: null,
+      lucky_number: null,
+      created_at: new Date().toISOString()
+    };
+
+    const { error } = await supabase.from('attendance_users').insert(newObj);
+    if (error) return { success: false, message: error.message };
+    return { success: true, user: newObj };
+  },
+
+  async adminUpdateAttendanceUser(id, updates) {
+    const cleanUpdates = {};
+    for (const [k, v] of Object.entries(updates)) {
+      if (v !== undefined) cleanUpdates[k] = v;
+    }
+    const { error } = await supabase
+      .from('attendance_users')
+      .update(cleanUpdates)
+      .eq('id', id);
+
+    if (error) return { success: false, message: error.message };
+    return { success: true };
+  },
+
+  async adminDeleteAttendanceUser(id) {
+    const { error } = await supabase.from('attendance_users').delete().eq('id', id);
+    if (error) return { success: false, message: error.message };
+    return { success: true };
+  },
+
+  async adminResetAttendance(userId = null) {
+    let query = supabase.from('attendance_users').update({
+      is_attended: false,
+      attended_at: null,
+      lucky_number: null
+    });
+
+    if (userId) {
+      query = query.eq('id', userId);
+    } else {
+      query = query.neq('id', 'placeholder_never_match');
+    }
+
+    const { error } = await query;
+    if (error) return { success: false, message: error.message };
+    return { success: true };
+  },
+
+  async adminExportAttendanceXLSX() {
+    const { data: users, error } = await supabase
+      .from('attendance_users')
+      .select('*')
+      .order('stt', { ascending: true });
+
+    if (error || !users || users.length === 0) {
+      alert('Chưa có dữ liệu nhân sự để xuất file.');
+      return;
+    }
+
+    if (!window.XLSX) {
+      alert('SheetJS (XLSX) chưa được tải.');
+      return;
+    }
+
+    const rows = users.map((u, i) => ({
+      'STT': u.stt || (i + 1),
+      'MSNV': u.employee_code,
+      'Họ và tên': u.full_name,
+      'Email': u.email || '—',
+      'Vị trí': u.position || '—',
+      'Phòng ban': u.department || '—',
+      'Bộ phận': u.sub_department || '—',
+      'Khối': u.division || '—',
+      'Trạng thái': u.is_attended ? 'ĐÃ ĐIỂM DANH' : 'Chưa điểm danh',
+      'Giờ điểm danh': u.attended_at ? new Date(u.attended_at).toLocaleString('vi-VN') : '—',
+      'Số may mắn': u.lucky_number ? `#${u.lucky_number}` : '—',
+      'Mã QR Token': u.qr_code_data
+    }));
+
+    const ws = window.XLSX.utils.json_to_sheet(rows);
+    const wb = window.XLSX.utils.book_new();
+    window.XLSX.utils.book_append_sheet(wb, ws, 'Diem Danh Business Day 2026');
+
+    const fileName = `BaoCao_DiemDanh_BusinessDay_${new Date().toISOString().slice(0, 10)}.xlsx`;
+    window.XLSX.writeFile(wb, fileName);
+  },
+
+  async getBusinessDayEmailTemplate() {
+    const { data } = await supabase
+      .from('settings')
+      .select('value')
+      .eq('key', 'bd_email_template')
+      .limit(1);
+
+    if (data && data.length > 0 && data[0].value) {
+      try {
+        return JSON.parse(data[0].value);
+      } catch (e) {}
+    }
+
+    return {
+      subject: '[HOÀNG ANH] Thư Mời & Mã QR Tham Dự Sự Kiện Business Day 2026 - {FULL_NAME}',
+      body: `Kính gửi Anh/Chị {FULL_NAME} ({MSNV} - {DEPARTMENT}),
+
+Phòng Nhân sự trân trọng kính mời Anh/Chị tham dự Sự Kiện Business Day 2026 diễn ra vào cuối tháng 12.
+
+THÔNG TIN ĐIỂM DANH CÁ NHÂN:
+- Họ và tên: {FULL_NAME}
+- Mã định danh: {MSNV}
+- Phòng ban / Bộ phận: {DEPARTMENT}
+
+Vui lòng lưu lại hình ảnh Mã QR đính kèm thư này và mang theo điện thoại khi đến tham dự sự kiện.
+Khi đến bàn đón tiếp, Ban tổ chức sẽ quét mã QR của Anh/Chị để điểm danh và cấp Số May Mắn tham gia chương trình Bốc Thăm Trúng Thưởng!
+
+Trân trọng,
+Phòng Nhân Sự - Hoàng Anh Group`
+    };
+  },
+
+  async saveBusinessDayEmailTemplate(template) {
+    const { error } = await supabase
+      .from('settings')
+      .upsert({
+        key: 'bd_email_template',
+        value: JSON.stringify(template)
+      });
+    if (error) return { success: false, message: error.message };
+    return { success: true };
   }
 };

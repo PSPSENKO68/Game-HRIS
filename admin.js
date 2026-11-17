@@ -4,6 +4,9 @@
  */
 
 import { db, parseCSV, exportAccountsAsCSV } from './supabase.js';
+import QRCode from 'qrcode';
+import { Html5Qrcode } from 'html5-qrcode';
+import confetti from 'canvas-confetti';
 
 document.addEventListener('DOMContentLoaded', async () => {
   // ── Kiểm tra phiên đăng nhập ────────────────────────────────────────────────
@@ -23,12 +26,14 @@ document.addEventListener('DOMContentLoaded', async () => {
   const tabHistoryBtn = document.getElementById('tab_history_btn');
   const tabImportBtn = document.getElementById('tab_import_btn');
   const tabFlashcardsBtn = document.getElementById('tab_flashcards_btn');
+  const tabBusinessDayBtn = document.getElementById('tab_business_day_btn');
   const adminDbMode = document.getElementById('admin_db_mode');
   const sectionUsers = document.getElementById('section_users');
   const sectionQuizzes = document.getElementById('section_quizzes');
   const sectionHistory = document.getElementById('section_history');
   const sectionImport = document.getElementById('section_import');
   const sectionFlashcards = document.getElementById('section_flashcards');
+  const sectionBusinessDay = document.getElementById('section_business_day');
 
   // User Modal
   const modalUser = document.getElementById('modal_user');
@@ -172,12 +177,17 @@ document.addEventListener('DOMContentLoaded', async () => {
     { btn: tabQuizzesBtn, section: sectionQuizzes },
     { btn: tabHistoryBtn, section: sectionHistory },
     { btn: tabImportBtn, section: sectionImport },
-    { btn: tabFlashcardsBtn, section: sectionFlashcards }
+    { btn: tabFlashcardsBtn, section: sectionFlashcards },
+    { btn: tabBusinessDayBtn, section: sectionBusinessDay }
   ];
 
   tabConfigs.forEach(tab => {
     if (!tab.btn) return;
     tab.btn.addEventListener('click', () => {
+      // If leaving business day tab, stop active camera if running
+      if (typeof stopCameraScanner === 'function') {
+        stopCameraScanner();
+      }
       tabConfigs.forEach(t => {
         if (t.btn) t.btn.removeAttribute('style');
         t.btn.className = 'tab-btn w-full text-left px-4 py-3 rounded-2xl font-bold text-sm text-slate-600 hover:bg-slate-50 transition flex items-center gap-3 cursor-pointer';
@@ -191,6 +201,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (tab.btn === tabQuizzesBtn) fetchAndRenderQuizzes();
       if (tab.btn === tabHistoryBtn) fetchAndRenderHistory();
       if (tab.btn === tabFlashcardsBtn) fetchAndRenderFlashcardSets();
+      if (tab.btn === tabBusinessDayBtn) fetchAndRenderBusinessDay();
     });
   });
 
@@ -1635,5 +1646,1144 @@ document.addEventListener('DOMContentLoaded', async () => {
         else showAdminAlert('Lỗi', result.message);
       });
     });
+  }
+
+  // ── 6. BUSINESS DAY 2026: ĐIỂM DANH & QUAY SỐ MAY MẮN ───────────────────────
+  // DOM Elements
+  const btnBdOpenScanner = document.getElementById('btn_bd_open_scanner');
+  const btnBdAddUser = document.getElementById('btn_bd_add_user');
+  const btnBdExportExcel = document.getElementById('btn_bd_export_excel');
+  const btnBdEmailTemplate = document.getElementById('btn_bd_email_template');
+  const btnBdRefresh = document.getElementById('btn_bd_refresh');
+
+  const bdStatTotal = document.getElementById('bd_stat_total');
+  const bdStatAttended = document.getElementById('bd_stat_attended');
+  const bdStatPercent = document.getElementById('bd_stat_percent');
+  const bdStatUnattended = document.getElementById('bd_stat_unattended');
+  const bdStatLuckyIssued = document.getElementById('bd_stat_lucky_issued');
+
+  const bdSearchInput = document.getElementById('bd_search_input');
+  const bdFilterStatus = document.getElementById('bd_filter_status');
+  const bdFilterDivision = document.getElementById('bd_filter_division');
+  const bdFilterDept = document.getElementById('bd_filter_dept');
+  const bdBtnFilterReset = document.getElementById('bd_btn_filter_reset');
+
+  const bdTableBody = document.getElementById('bd_table_body');
+  const bdTableCount = document.getElementById('bd_table_count');
+
+  // Modal View QR
+  const modalViewQr = document.getElementById('modal_view_qr');
+  const btnCloseViewQr = document.getElementById('btn_close_view_qr');
+  const qrViewCanvas = document.getElementById('qr_view_canvas');
+  const qrViewFullname = document.getElementById('qr_view_fullname');
+  const qrViewCode = document.getElementById('qr_view_code');
+  const qrViewPosition = document.getElementById('qr_view_position');
+  const qrViewDept = document.getElementById('qr_view_dept');
+  const qrViewStatusBadge = document.getElementById('qr_view_status_badge');
+  const qrViewLuckyBadge = document.getElementById('qr_view_lucky_badge');
+  const btnDownloadQrPng = document.getElementById('btn_download_qr_png');
+  const btnViewQrOutlook = document.getElementById('btn_view_qr_outlook');
+
+  // Modal QR Scanner
+  const modalQrScanner = document.getElementById('modal_qr_scanner');
+  const btnCloseQrScanner = document.getElementById('btn_close_qr_scanner');
+  const scannerCameraBody = document.getElementById('scanner_camera_body');
+  const qrReaderViewport = document.getElementById('qr_reader_viewport');
+  const scannerCameraStatus = document.getElementById('scanner_camera_status');
+  const btnScannerSwitchCam = document.getElementById('btn_scanner_switch_cam');
+  const scannerManualCodeInput = document.getElementById('scanner_manual_code_input');
+  const btnScannerManualSubmit = document.getElementById('btn_scanner_manual_submit');
+
+  const scannerLuckyAnimationOverlay = document.getElementById('scanner_lucky_animation_overlay');
+  const scannerLuckyRollerName = document.getElementById('scanner_lucky_roller_name');
+  const scannerLuckyRollerDigits = document.getElementById('scanner_lucky_roller_digits');
+
+  const scannerResultCard = document.getElementById('scanner_result_card');
+  const btnResultClose = document.getElementById('btn_result_close');
+  const resultFullname = document.getElementById('result_fullname');
+  const resultCodeDept = document.getElementById('result_code_dept');
+  const resultLuckyNumber = document.getElementById('result_lucky_number');
+  const resultAttendedAt = document.getElementById('result_attended_at');
+  const btnScannerNext = document.getElementById('btn_scanner_next');
+
+  // Modal Attendance User
+  const modalAttendanceUser = document.getElementById('modal_attendance_user');
+  const modalBdUserTitle = document.getElementById('modal_bd_user_title');
+  const btnCloseBdUserModal = document.getElementById('btn_close_bd_user_modal');
+  const btnCancelBdUser = document.getElementById('btn_cancel_bd_user');
+  const formBdUser = document.getElementById('form_bd_user');
+  const formBdUserId = document.getElementById('form_bd_user_id');
+  const bdTypeEmployee = document.getElementById('bd_type_employee');
+  const bdTypeGuest = document.getElementById('bd_type_guest');
+  const formBdCode = document.getElementById('form_bd_code');
+  const formBdCodeHint = document.getElementById('form_bd_code_hint');
+  const formBdFullname = document.getElementById('form_bd_fullname');
+  const formBdEmail = document.getElementById('form_bd_email');
+  const formBdPosition = document.getElementById('form_bd_position');
+  const formBdSubDept = document.getElementById('form_bd_sub_dept');
+  const formBdDept = document.getElementById('form_bd_dept');
+  const formBdDivision = document.getElementById('form_bd_division');
+
+  // Modal Email Preview
+  const modalEmailPreview = document.getElementById('modal_email_preview');
+  const btnCloseEmailPreview = document.getElementById('btn_close_email_preview');
+  const mailPreviewName = document.getElementById('mail_preview_name');
+  const mailPreviewTo = document.getElementById('mail_preview_to');
+  const mailPreviewSubject = document.getElementById('mail_preview_subject');
+  const mailPreviewBody = document.getElementById('mail_preview_body');
+  const btnSendOutlookMailto = document.getElementById('btn_send_outlook_mailto');
+  const btnDownloadPreviewQr = document.getElementById('btn_download_preview_qr');
+  const btnCopyEmailContent = document.getElementById('btn_copy_email_content');
+
+  // Modal Email Template
+  const modalEmailTemplate = document.getElementById('modal_email_template');
+  const btnCloseEmailTemplate = document.getElementById('btn_close_email_template');
+  const btnCancelEmailTemplate = document.getElementById('btn_cancel_email_template');
+  const btnResetEmailTemplateDefault = document.getElementById('btn_reset_email_template_default');
+  const formEmailTemplate = document.getElementById('form_email_template');
+  const formTplSubject = document.getElementById('form_tpl_subject');
+  const formTplBody = document.getElementById('form_tpl_body');
+
+  // State
+  let attendanceUsersCache = [];
+  let html5QrScannerInstance = null;
+  let isCameraScanning = false;
+  let cameraFacingMode = 'environment';
+  let selectedAttendee = null;
+  let isProcessingCheckIn = false;
+  let emailTemplateCache = null;
+
+  // Web Audio Synth for Lucky Roll
+  let audioCtx = null;
+  function getAudioContext() {
+    if (!audioCtx) {
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      if (AudioCtx) audioCtx = new AudioCtx();
+    }
+    if (audioCtx && audioCtx.state === 'suspended') {
+      audioCtx.resume();
+    }
+    return audioCtx;
+  }
+
+  function playSlotTickSound() {
+    try {
+      const ctx = getAudioContext();
+      if (!ctx) return;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(600 + Math.random() * 600, ctx.currentTime);
+      gain.gain.setValueAtTime(0.08, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.05);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(ctx.currentTime);
+      osc.stop(ctx.currentTime + 0.05);
+    } catch (e) {}
+  }
+
+  function playWinFanfare() {
+    try {
+      const ctx = getAudioContext();
+      if (!ctx) return;
+      const notes = [523.25, 659.25, 783.99, 1046.50];
+      notes.forEach((freq, idx) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(freq, ctx.currentTime + idx * 0.1);
+        gain.gain.setValueAtTime(0.12, ctx.currentTime + idx * 0.1);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + idx * 0.1 + 0.4);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(ctx.currentTime + idx * 0.1);
+        osc.stop(ctx.currentTime + idx * 0.1 + 0.4);
+      });
+    } catch (e) {}
+  }
+
+  // 1. Fetch & Render Table + Stats
+  async function fetchAndRenderBusinessDay() {
+    if (!bdTableBody) return;
+    bdTableBody.innerHTML = `
+      <tr>
+        <td colspan="8" class="text-center py-8 text-slate-400 font-bold">
+          <div class="inline-flex items-center gap-2">
+            <span class="animate-spin">🔄</span> Đang nạp danh sách điểm danh Business Day...
+          </div>
+        </td>
+      </tr>
+    `;
+
+    try {
+      const [users, stats] = await Promise.all([
+        db.adminGetAttendanceUsers(),
+        db.adminGetAttendanceStats()
+      ]);
+
+      attendanceUsersCache = users || [];
+
+      // Update stats cards
+      if (stats) {
+        if (bdStatTotal) bdStatTotal.textContent = stats.total;
+        if (bdStatAttended) bdStatAttended.textContent = stats.attended;
+        if (bdStatPercent) bdStatPercent.textContent = stats.percent + '%';
+        if (bdStatUnattended) bdStatUnattended.textContent = stats.unattended;
+        if (bdStatLuckyIssued) bdStatLuckyIssued.textContent = stats.luckyIssued;
+      }
+
+      populateFilterDropdowns(attendanceUsersCache);
+      applyAttendanceFilters();
+    } catch (err) {
+      console.error('Lỗi nạp Business Day:', err);
+      bdTableBody.innerHTML = `
+        <tr>
+          <td colspan="8" class="text-center py-6 text-rose-500 font-bold">
+            Không thể tải dữ liệu: ${escapeHTML(err.message)}
+          </td>
+        </tr>
+      `;
+    }
+  }
+
+  function populateFilterDropdowns(users) {
+    if (!bdFilterDivision || !bdFilterDept) return;
+    // Divisions
+    const currentDiv = bdFilterDivision.value;
+    const divisions = [...new Set(users.map(u => (u.division || '').trim()).filter(Boolean))].sort();
+    let divOptions = '<option value="all">Tất cả Khối</option>';
+    divisions.forEach(d => {
+      divOptions += `<option value="${escapeHTML(d)}">${escapeHTML(d)}</option>`;
+    });
+    bdFilterDivision.innerHTML = divOptions;
+    if (divisions.includes(currentDiv)) bdFilterDivision.value = currentDiv;
+
+    // Departments
+    const currentDept = bdFilterDept.value;
+    const depts = [...new Set(users.map(u => (u.department || '').trim()).filter(Boolean))].sort();
+    let deptOptions = '<option value="all">Tất cả Phòng ban</option>';
+    depts.forEach(d => {
+      deptOptions += `<option value="${escapeHTML(d)}">${escapeHTML(d)}</option>`;
+    });
+    bdFilterDept.innerHTML = deptOptions;
+    if (depts.includes(currentDept)) bdFilterDept.value = currentDept;
+  }
+
+  function applyAttendanceFilters() {
+    if (!bdTableBody) return;
+    const q = (bdSearchInput?.value || '').trim().toLowerCase();
+    const statusVal = bdFilterStatus?.value || 'all';
+    const divVal = bdFilterDivision?.value || 'all';
+    const deptVal = bdFilterDept?.value || 'all';
+
+    const filtered = attendanceUsersCache.filter(u => {
+      if (statusVal === 'attended' && !u.is_attended) return false;
+      if (statusVal === 'unattended' && u.is_attended) return false;
+      if (divVal !== 'all' && (u.division || '').trim() !== divVal) return false;
+      if (deptVal !== 'all' && (u.department || '').trim() !== deptVal) return false;
+
+      if (q) {
+        const matchCode = (u.employee_code || '').toLowerCase().includes(q);
+        const matchName = (u.full_name || '').toLowerCase().includes(q);
+        const matchEmail = (u.email || '').toLowerCase().includes(q);
+        const matchPos = (u.position || '').toLowerCase().includes(q);
+        const matchDept = (u.department || '').toLowerCase().includes(q);
+        const matchSub = (u.sub_department || '').toLowerCase().includes(q);
+        const matchLucky = u.lucky_number ? (`#${u.lucky_number}`).includes(q) : false;
+        if (!matchCode && !matchName && !matchEmail && !matchPos && !matchDept && !matchSub && !matchLucky) {
+          return false;
+        }
+      }
+      return true;
+    });
+
+    renderAttendanceTable(filtered);
+  }
+
+  function renderAttendanceTable(users) {
+    if (bdTableCount) {
+      bdTableCount.textContent = `Hiển thị ${users.length} / ${attendanceUsersCache.length} nhân sự tham dự`;
+    }
+
+    if (!users || users.length === 0) {
+      bdTableBody.innerHTML = `
+        <tr>
+          <td colspan="8" class="text-center py-8 text-slate-400 font-bold">
+            Không tìm thấy nhân sự phù hợp với bộ lọc.
+          </td>
+        </tr>
+      `;
+      return;
+    }
+
+    bdTableBody.innerHTML = '';
+    users.forEach((u, idx) => {
+      const tr = document.createElement('tr');
+      tr.className = 'hover:bg-slate-50 transition border-b border-slate-100/80';
+
+      const isGuest = (u.division || '').toLowerCase().includes('khách') || (u.employee_code || '').startsWith('KM');
+      const codeBadge = isGuest
+        ? `<span class="px-2 py-0.5 bg-purple-50 text-purple-700 border border-purple-200 rounded font-mono font-bold text-[11px]">${escapeHTML(u.employee_code || 'KM')}</span>`
+        : `<span class="px-2 py-0.5 bg-slate-100 text-slate-700 rounded font-mono font-bold text-[11px]">${escapeHTML(u.employee_code || '—')}</span>`;
+
+      const statusBadge = u.is_attended
+        ? `<div class="flex flex-col items-center">
+             <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-black bg-emerald-100/80 text-emerald-800">
+               <span class="w-1.5 h-1.5 rounded-full bg-emerald-600"></span> ĐÃ CHECK-IN
+             </span>
+             <span class="text-[10px] font-mono text-slate-400 mt-0.5">${u.attended_at ? new Date(u.attended_at).toLocaleTimeString('vi-VN') : ''}</span>
+           </div>`
+        : `<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-500">
+             Chưa điểm danh
+           </span>`;
+
+      const luckyBadge = u.lucky_number
+        ? `<span class="inline-block px-3 py-1 bg-gradient-to-r from-amber-100 to-amber-200 text-amber-900 border border-amber-300 rounded-xl font-mono font-black text-xs shadow-xs tracking-wider">#${u.lucky_number}</span>`
+        : `<span class="text-slate-300 font-bold">—</span>`;
+
+      const checkInActionBtn = u.is_attended
+        ? `<button class="btn-bd-reset p-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-lg text-xs font-bold transition cursor-pointer" title="Hủy điểm danh để check-in lại" data-id="${u.id}">🔄 Hủy</button>`
+        : `<button class="btn-bd-quick-checkin px-2.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold transition flex items-center gap-1 cursor-pointer shadow-xs" data-id="${u.id}">⚡ Check-in</button>`;
+
+      tr.innerHTML = `
+        <td class="py-3 px-3 text-center text-slate-400 font-bold">${idx + 1}</td>
+        <td class="py-3 px-3">${codeBadge}</td>
+        <td class="py-3 px-3">
+          <div class="font-bold text-slate-900">${escapeHTML(u.full_name)}</div>
+          ${u.email ? `<div class="text-[10px] text-slate-400 font-mono">${escapeHTML(u.email)}</div>` : ''}
+        </td>
+        <td class="py-3 px-3">
+          <div class="font-bold text-slate-700">${escapeHTML(u.position || '—')}</div>
+          <div class="text-[11px] text-slate-400">${escapeHTML(u.sub_department || '')}</div>
+        </td>
+        <td class="py-3 px-3">
+          <div class="font-bold text-slate-700">${escapeHTML(u.department || '—')}</div>
+          <div class="text-[11px] text-slate-400">${escapeHTML(u.division || '')}</div>
+        </td>
+        <td class="py-3 px-3 text-center">${statusBadge}</td>
+        <td class="py-3 px-3 text-center">${luckyBadge}</td>
+        <td class="py-3 px-3 text-center">
+          <div class="flex items-center justify-center gap-1.5">
+            <button class="btn-bd-view-qr px-2 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-lg text-xs font-bold transition flex items-center gap-1 cursor-pointer" data-id="${u.id}" title="Xem và tải thẻ QR">
+              🎫 QR
+            </button>
+            <button class="btn-bd-email px-2 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-700 rounded-lg text-xs font-bold transition flex items-center gap-1 cursor-pointer" data-id="${u.id}" title="Gửi thư mời Outlook">
+              📧 Mail
+            </button>
+            ${checkInActionBtn}
+            <button class="btn-bd-edit p-1.5 bg-slate-50 hover:bg-slate-100 text-slate-600 rounded-lg text-xs font-bold transition cursor-pointer" data-id="${u.id}" title="Chỉnh sửa thông tin">
+              ✏️
+            </button>
+            <button class="btn-bd-delete p-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-lg text-xs font-bold transition cursor-pointer" data-id="${u.id}" title="Xóa người tham dự">
+              🗑️
+            </button>
+          </div>
+        </td>
+      `;
+
+      bdTableBody.appendChild(tr);
+    });
+
+    attachTableActionListeners();
+  }
+
+  function attachTableActionListeners() {
+    // 🎫 View QR
+    document.querySelectorAll('.btn-bd-view-qr').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const u = attendanceUsersCache.find(x => x.id === btn.dataset.id);
+        if (u) openViewQrModal(u);
+      });
+    });
+
+    // 📧 Mail Outlook preview
+    document.querySelectorAll('.btn-bd-email').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const u = attendanceUsersCache.find(x => x.id === btn.dataset.id);
+        if (u) openEmailPreviewModal(u);
+      });
+    });
+
+    // ⚡ Quick Check-in
+    document.querySelectorAll('.btn-bd-quick-checkin').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const u = attendanceUsersCache.find(x => x.id === btn.dataset.id);
+        if (!u) return;
+        if (!confirm(`Xác nhận điểm danh cho "${u.full_name}" (${u.employee_code || 'KM'}) và quay số may mắn?`)) return;
+        await triggerLuckyDrawAndCheckIn(u, () => db.adminManualCheckIn(u.id));
+      });
+    });
+
+    // 🔄 Reset attendance
+    document.querySelectorAll('.btn-bd-reset').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const u = attendanceUsersCache.find(x => x.id === btn.dataset.id);
+        if (!u) return;
+        if (!confirm(`Hủy điểm danh cho "${u.full_name}"?\nSố may mắn #${u.lucky_number} sẽ bị thu hồi và có thể cấp lại khi check-in.`)) return;
+        const res = await db.adminResetAttendance(u.id);
+        if (res.success) {
+          fetchAndRenderBusinessDay();
+        } else {
+          showAdminAlert('Lỗi', res.message);
+        }
+      });
+    });
+
+    // ✏️ Edit
+    document.querySelectorAll('.btn-bd-edit').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const u = attendanceUsersCache.find(x => x.id === btn.dataset.id);
+        if (u) openEditAttendanceUserModal(u);
+      });
+    });
+
+    // 🗑️ Delete
+    document.querySelectorAll('.btn-bd-delete').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const u = attendanceUsersCache.find(x => x.id === btn.dataset.id);
+        if (!u) return;
+        if (!confirm(`Xóa vĩnh viễn nhân sự "${u.full_name}" (${u.employee_code || 'KM'}) khỏi danh sách Business Day?`)) return;
+        const res = await db.adminDeleteAttendanceUser(u.id);
+        if (res.success) {
+          fetchAndRenderBusinessDay();
+        } else {
+          showAdminAlert('Lỗi xóa', res.message);
+        }
+      });
+    });
+  }
+
+  // 2. Export Complete Pass Card PNG (with Logo, QR, Name, Code, Dept)
+  function drawCardRoundedRect(ctx, x, y, width, height, radius) {
+    if (typeof ctx.roundRect === 'function') {
+      ctx.beginPath();
+      ctx.roundRect(x, y, width, height, radius);
+    } else {
+      ctx.beginPath();
+      ctx.moveTo(x + radius, y);
+      ctx.lineTo(x + width - radius, y);
+      ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
+      ctx.lineTo(x + width, y + height - radius);
+      ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+      ctx.lineTo(x + radius, y + height);
+      ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
+      ctx.lineTo(x, y + radius);
+      ctx.quadraticCurveTo(x, y, x + radius, y);
+      ctx.closePath();
+    }
+  }
+
+  async function generateCompleteCardDataURL(user) {
+    if (!user || !user.qr_code_data) return null;
+
+    // 1. Generate base high-resolution QR
+    const qrDataUrl = await QRCode.toDataURL(user.qr_code_data, {
+      width: 300,
+      margin: 1,
+      color: { dark: '#0F172A', light: '#FFFFFF' }
+    });
+
+    const qrImg = new Image();
+    await new Promise((resolve, reject) => {
+      qrImg.onload = resolve;
+      qrImg.onerror = reject;
+      qrImg.src = qrDataUrl;
+    });
+
+    // 2. Setup canvas: 540 width x 720 height
+    const canvas = document.createElement('canvas');
+    canvas.width = 540;
+    canvas.height = 720;
+    const ctx = canvas.getContext('2d');
+
+    // Outer background
+    ctx.fillStyle = '#FFFFFF';
+    ctx.fillRect(0, 0, 540, 720);
+
+    // Card border container
+    const cardX = 14, cardY = 14, cardW = 512, cardH = 692, cardR = 28;
+    drawCardRoundedRect(ctx, cardX, cardY, cardW, cardH, cardR);
+    const grad = ctx.createLinearGradient(cardX, cardY, cardX, cardY + cardH);
+    grad.addColorStop(0, '#FFFFFF');
+    grad.addColorStop(0.6, '#F8FAFC');
+    grad.addColorStop(1, '#FEFDFB');
+    ctx.fillStyle = grad;
+    ctx.fill();
+
+    ctx.strokeStyle = '#E2E8F0';
+    ctx.lineWidth = 1.8;
+    ctx.stroke();
+
+    ctx.textAlign = 'center';
+
+    // Header 1: HOÀNG ANH GROUP
+    ctx.font = 'bold 12px system-ui, -apple-system, sans-serif';
+    ctx.fillStyle = '#94A3B8';
+    ctx.fillText('H O À N G   A N H   G R O U P', 270, 56);
+
+    // Header 2: BUSINESS DAY 2026
+    ctx.font = '900 19px system-ui, -apple-system, sans-serif';
+    ctx.fillStyle = '#0F172A';
+    ctx.fillText('BUSINESS DAY 2026', 270, 84);
+
+    // QR Box container with white background
+    const qrBoxX = 130, qrBoxY = 110, qrBoxSize = 280, qrBoxR = 20;
+    ctx.save();
+    ctx.shadowColor = 'rgba(15, 23, 42, 0.06)';
+    ctx.shadowBlur = 12;
+    ctx.shadowOffsetY = 4;
+    drawCardRoundedRect(ctx, qrBoxX, qrBoxY, qrBoxSize, qrBoxSize, qrBoxR);
+    ctx.fillStyle = '#FFFFFF';
+    ctx.fill();
+    ctx.strokeStyle = '#F1F5F9';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+    ctx.restore();
+
+    // Draw QR Code centered inside box
+    ctx.drawImage(qrImg, qrBoxX + 14, qrBoxY + 14, 252, 252);
+
+    // Attendee Full Name
+    ctx.font = '900 24px system-ui, -apple-system, sans-serif';
+    ctx.fillStyle = '#0F172A';
+    ctx.fillText(user.full_name || 'Khách Mời', 270, 436);
+
+    // MSNV Badge Pill
+    const codeText = user.employee_code || 'GUEST';
+    ctx.font = 'bold 14px "Courier New", monospace';
+    const codeMetrics = ctx.measureText(codeText);
+    const pillW = Math.max(codeMetrics.width + 24, 96);
+    const pillH = 28;
+    const pillX = 270 - pillW / 2;
+    const pillY = 452;
+    drawCardRoundedRect(ctx, pillX, pillY, pillW, pillH, 8);
+    ctx.fillStyle = '#FEF3C7';
+    ctx.fill();
+    ctx.strokeStyle = '#FDE68A';
+    ctx.lineWidth = 1.2;
+    ctx.stroke();
+
+    ctx.fillStyle = '#B45309';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(codeText, 270, pillY + pillH / 2 + 1);
+    ctx.textBaseline = 'alphabetic';
+
+    // Position
+    let currentY = 512;
+    if (user.position) {
+      ctx.font = 'bold 14px system-ui, -apple-system, sans-serif';
+      ctx.fillStyle = '#334155';
+      ctx.fillText(user.position, 270, currentY);
+      currentY += 22;
+    }
+
+    // Department • Division
+    const deptDiv = [user.department, user.division].filter(Boolean).join(' • ');
+    if (deptDiv) {
+      ctx.font = '500 13px system-ui, -apple-system, sans-serif';
+      ctx.fillStyle = '#64748B';
+      ctx.fillText(deptDiv, 270, currentY);
+    }
+
+    // Divider Line
+    ctx.strokeStyle = '#F1F5F9';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(56, 566);
+    ctx.lineTo(484, 566);
+    ctx.stroke();
+
+    // Status Pill (Chỉ hiển thị khi đã check-in / có số may mắn)
+    if (user.is_attended && user.lucky_number) {
+      const luckyText = `🎉 ĐÃ CHECK-IN • SỐ MAY MẮN: #${user.lucky_number}`;
+      ctx.font = 'bold 13px system-ui, -apple-system, sans-serif';
+      const statusMetrics = ctx.measureText(luckyText);
+      const sW = statusMetrics.width + 32;
+      const sH = 32;
+      const sX = 270 - sW / 2;
+      const sY = 586;
+      drawCardRoundedRect(ctx, sX, sY, sW, sH, 16);
+      ctx.fillStyle = '#FEF3C7';
+      ctx.fill();
+      ctx.strokeStyle = '#F59E0B';
+      ctx.lineWidth = 1.2;
+      ctx.stroke();
+
+      ctx.fillStyle = '#92400E';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(luckyText, 270, sY + sH / 2);
+      ctx.textBaseline = 'alphabetic';
+    } else if (user.is_attended) {
+      const statusText = '✅ ĐÃ ĐIỂM DANH';
+      ctx.font = 'bold 13px system-ui, -apple-system, sans-serif';
+      const statusMetrics = ctx.measureText(statusText);
+      const sW = statusMetrics.width + 32;
+      const sH = 32;
+      const sX = 270 - sW / 2;
+      const sY = 586;
+      drawCardRoundedRect(ctx, sX, sY, sW, sH, 16);
+      ctx.fillStyle = '#ECFDF5';
+      ctx.fill();
+      ctx.strokeStyle = '#A7F3D0';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+
+      ctx.fillStyle = '#065F46';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(statusText, 270, sY + sH / 2);
+      ctx.textBaseline = 'alphabetic';
+    }
+
+    // Footnote
+    ctx.font = '500 11px system-ui, -apple-system, sans-serif';
+    ctx.fillStyle = '#94A3B8';
+    ctx.fillText('Vui lòng xuất trình thẻ này tại bàn đón tiếp sự kiện', 270, 656);
+
+    return canvas.toDataURL('image/png');
+  }
+
+  async function downloadQRAsPNG(user) {
+    if (!user || !user.qr_code_data) return;
+    try {
+      const cardDataUrl = await generateCompleteCardDataURL(user);
+      if (!cardDataUrl) throw new Error('Không thể tạo ảnh thẻ.');
+      const a = document.createElement('a');
+      a.href = cardDataUrl;
+      const safeCode = (user.employee_code || 'GUEST').replace(/[^a-zA-Z0-9_-]/g, '_');
+      const safeName = (user.full_name || 'Attendee').replace(/[^a-zA-Z0-9\u00C0-\u1EF9]/g, '_');
+      a.download = `TheDiemDanh_BusinessDay_${safeCode}_${safeName}.png`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    } catch (e) {
+      console.error('Lỗi tải file PNG thẻ điểm danh:', e);
+      alert('Không thể tạo file ảnh thẻ: ' + e.message);
+    }
+  }
+
+  // 3. 1.5s Lucky Roll Animation & Check-in Execution
+  async function triggerLuckyDrawAndCheckIn(attendee, checkInAction) {
+    if (isProcessingCheckIn) return;
+    isProcessingCheckIn = true;
+
+    // Show scanner modal and animation overlay
+    modalQrScanner.classList.remove('hidden');
+    scannerCameraBody.classList.remove('hidden');
+    scannerResultCard.classList.add('hidden');
+    scannerLuckyAnimationOverlay.classList.remove('hidden');
+
+    scannerLuckyRollerName.textContent = attendee.full_name + (attendee.employee_code ? ` (${attendee.employee_code})` : '');
+    scannerLuckyRollerDigits.textContent = '???';
+
+    // Start rolling slot number animation
+    const rollTimer = setInterval(() => {
+      const randNum = Math.floor(Math.random() * 900 + 100);
+      scannerLuckyRollerDigits.textContent = randNum;
+      playSlotTickSound();
+    }, 60);
+
+    // Minimum delay of 1.5s for excitement anticipation
+    const minDelayPromise = new Promise(resolve => setTimeout(resolve, 1500));
+    const checkInPromise = (typeof checkInAction === 'function') ? checkInAction() : checkInAction;
+
+    try {
+      const [, checkInResult] = await Promise.all([minDelayPromise, checkInPromise]);
+      clearInterval(rollTimer);
+
+      if (!checkInResult || !checkInResult.success) {
+        scannerLuckyAnimationOverlay.classList.add('hidden');
+        showAdminAlert('Điểm danh không thành công', checkInResult?.message || 'Có lỗi xảy ra khi điểm danh.');
+        isProcessingCheckIn = false;
+        return;
+      }
+
+      const assignedNum = checkInResult.data.lucky_number;
+      scannerLuckyRollerDigits.textContent = `#${assignedNum}`;
+
+      // Winning sound and confetti!
+      playWinFanfare();
+      confetti({
+        particleCount: 120,
+        spread: 80,
+        origin: { y: 0.6 }
+      });
+
+      // Brief pause then show celebratory result card
+      await new Promise(r => setTimeout(r, 450));
+      scannerLuckyAnimationOverlay.classList.add('hidden');
+      scannerResultCard.classList.remove('hidden');
+
+      resultFullname.textContent = checkInResult.data.full_name;
+      resultCodeDept.textContent = `${checkInResult.data.employee_code || '—'} • ${checkInResult.data.department || checkInResult.data.division || ''}`;
+      resultLuckyNumber.textContent = `#${assignedNum}`;
+      resultAttendedAt.textContent = `Check-in lúc: ${new Date(checkInResult.data.attended_at).toLocaleTimeString('vi-VN')}`;
+
+      // Refresh background table & stats
+      fetchAndRenderBusinessDay();
+    } catch (err) {
+      clearInterval(rollTimer);
+      scannerLuckyAnimationOverlay.classList.add('hidden');
+      console.error('Lỗi check-in:', err);
+      showAdminAlert('Lỗi điểm danh', err.message);
+    } finally {
+      isProcessingCheckIn = false;
+    }
+  }
+
+  // 4. Camera Scanner Controller
+  async function startCameraScanner() {
+    modalQrScanner.classList.remove('hidden');
+    scannerCameraBody.classList.remove('hidden');
+    scannerResultCard.classList.add('hidden');
+    scannerLuckyAnimationOverlay.classList.add('hidden');
+    scannerCameraStatus.textContent = 'Đang khởi động camera...';
+
+    if (!html5QrScannerInstance) {
+      html5QrScannerInstance = new Html5Qrcode('qr_reader_viewport');
+    }
+
+    try {
+      isCameraScanning = true;
+      await html5QrScannerInstance.start(
+        { facingMode: cameraFacingMode },
+        { fps: 10, qrbox: { width: 220, height: 220 } },
+        async (decodedText) => {
+          if (isProcessingCheckIn) return;
+          console.log('Đã quét mã QR:', decodedText);
+          // Pause camera scanning during check-in
+          try {
+            await html5QrScannerInstance.stop();
+            isCameraScanning = false;
+          } catch (e) {}
+
+          const attendee = attendanceUsersCache.find(u =>
+            u.qr_code_data === decodedText ||
+            (u.employee_code && u.employee_code.toLowerCase() === decodedText.trim().toLowerCase())
+          ) || { full_name: 'Người tham dự' };
+
+          await triggerLuckyDrawAndCheckIn(attendee, () => db.adminCheckInQR(decodedText));
+        },
+        () => {
+          // ignore scan frame errors
+        }
+      );
+      scannerCameraStatus.textContent = 'Camera đang hoạt động. Đưa mã QR vào khung hình.';
+    } catch (err) {
+      console.error('Lỗi khởi động camera:', err);
+      scannerCameraStatus.textContent = '⚠️ Không thể mở camera. Bạn có thể nhập mã thủ công bên dưới.';
+      isCameraScanning = false;
+    }
+  }
+
+  async function stopCameraScanner() {
+    if (html5QrScannerInstance && isCameraScanning) {
+      try {
+        await html5QrScannerInstance.stop();
+      } catch (e) {}
+      isCameraScanning = false;
+    }
+    modalQrScanner.classList.add('hidden');
+    scannerResultCard.classList.add('hidden');
+    scannerLuckyAnimationOverlay.classList.add('hidden');
+  }
+
+  if (btnScannerSwitchCam) {
+    btnScannerSwitchCam.addEventListener('click', async () => {
+      cameraFacingMode = cameraFacingMode === 'environment' ? 'user' : 'environment';
+      if (html5QrScannerInstance && isCameraScanning) {
+        try {
+          await html5QrScannerInstance.stop();
+        } catch (e) {}
+        isCameraScanning = false;
+        await startCameraScanner();
+      }
+    });
+  }
+
+  if (btnScannerManualSubmit && scannerManualCodeInput) {
+    btnScannerManualSubmit.addEventListener('click', async () => {
+      const codeVal = scannerManualCodeInput.value.trim();
+      if (!codeVal) return;
+      scannerManualCodeInput.value = '';
+
+      if (html5QrScannerInstance && isCameraScanning) {
+        try {
+          await html5QrScannerInstance.stop();
+          isCameraScanning = false;
+        } catch (e) {}
+      }
+
+      const attendee = attendanceUsersCache.find(u =>
+        u.employee_code?.toLowerCase() === codeVal.toLowerCase() ||
+        u.qr_code_data === codeVal
+      ) || { full_name: codeVal };
+
+      await triggerLuckyDrawAndCheckIn(attendee, () => db.adminCheckInQR(codeVal));
+    });
+  }
+
+  if (btnScannerNext) {
+    btnScannerNext.addEventListener('click', async () => {
+      scannerResultCard.classList.add('hidden');
+      await startCameraScanner();
+    });
+  }
+  if (btnResultClose) {
+    btnResultClose.addEventListener('click', () => {
+      stopCameraScanner();
+    });
+  }
+  if (btnCloseQrScanner) {
+    btnCloseQrScanner.addEventListener('click', () => {
+      stopCameraScanner();
+    });
+  }
+
+  // 5. View QR Modal
+  async function openViewQrModal(user) {
+    selectedAttendee = user;
+    qrViewFullname.textContent = user.full_name;
+    qrViewCode.textContent = user.employee_code || 'KM';
+    qrViewPosition.textContent = user.position || 'Nhân sự tham dự';
+    qrViewDept.textContent = `${user.department || ''} • ${user.division || ''}`;
+
+    const qrViewStatusContainer = document.getElementById('qr_view_status_container');
+    if (user.is_attended) {
+      if (qrViewStatusContainer) qrViewStatusContainer.classList.remove('hidden');
+      qrViewStatusBadge.classList.remove('hidden');
+      qrViewStatusBadge.className = 'px-3 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800';
+      qrViewStatusBadge.textContent = `✅ Đã điểm danh (${user.attended_at ? new Date(user.attended_at).toLocaleTimeString('vi-VN') : ''})`;
+      if (user.lucky_number) {
+        qrViewLuckyBadge.classList.remove('hidden');
+        qrViewLuckyBadge.textContent = `Số May Mắn: #${user.lucky_number}`;
+      } else {
+        qrViewLuckyBadge.classList.add('hidden');
+      }
+    } else {
+      if (qrViewStatusContainer) qrViewStatusContainer.classList.add('hidden');
+      qrViewStatusBadge.classList.add('hidden');
+      qrViewLuckyBadge.classList.add('hidden');
+    }
+
+    try {
+      await QRCode.toCanvas(qrViewCanvas, user.qr_code_data, {
+        width: 176,
+        margin: 1,
+        color: { dark: '#0f172a', light: '#ffffff' }
+      });
+    } catch (e) {
+      console.error('Lỗi render QR canvas:', e);
+    }
+
+    modalViewQr.classList.remove('hidden');
+  }
+
+  if (btnCloseViewQr) {
+    btnCloseViewQr.addEventListener('click', () => modalViewQr.classList.add('hidden'));
+  }
+  if (btnDownloadQrPng) {
+    btnDownloadQrPng.addEventListener('click', () => {
+      if (selectedAttendee) downloadQRAsPNG(selectedAttendee);
+    });
+  }
+  if (btnViewQrOutlook) {
+    btnViewQrOutlook.addEventListener('click', () => {
+      modalViewQr.classList.add('hidden');
+      if (selectedAttendee) openEmailPreviewModal(selectedAttendee);
+    });
+  }
+
+  // 6. Email Preview & Outlook Trigger
+  async function openEmailPreviewModal(user) {
+    selectedAttendee = user;
+    if (!emailTemplateCache) {
+      emailTemplateCache = await db.getBusinessDayEmailTemplate();
+    }
+
+    mailPreviewName.textContent = user.full_name;
+    mailPreviewTo.textContent = user.email || '(Chưa có email)';
+
+    let subject = emailTemplateCache.subject || '';
+    let body = emailTemplateCache.body || '';
+
+    const replacements = {
+      '{FULL_NAME}': user.full_name || '',
+      '{MSNV}': user.employee_code || '',
+      '{POSITION}': user.position || '',
+      '{DEPARTMENT}': user.department || '',
+      '{DIVISION}': user.division || '',
+      '{EVENT_NAME}': 'Business Day 2026',
+      '{DATE}': 'Cuối tháng 12/2026',
+      '{LOCATION}': 'Hội trường Hoàng Anh Group'
+    };
+
+    Object.entries(replacements).forEach(([key, val]) => {
+      subject = subject.replaceAll(key, val);
+      body = body.replaceAll(key, val);
+    });
+
+    mailPreviewSubject.value = subject;
+    mailPreviewBody.value = body;
+
+    modalEmailPreview.classList.remove('hidden');
+  }
+
+  if (btnCloseEmailPreview) {
+    btnCloseEmailPreview.addEventListener('click', () => modalEmailPreview.classList.add('hidden'));
+  }
+
+  if (btnDownloadPreviewQr) {
+    btnDownloadPreviewQr.addEventListener('click', () => {
+      if (selectedAttendee) downloadQRAsPNG(selectedAttendee);
+    });
+  }
+
+  if (btnCopyEmailContent) {
+    btnCopyEmailContent.addEventListener('click', async () => {
+      const fullText = `Tiêu đề: ${mailPreviewSubject.value}\n\n${mailPreviewBody.value}`;
+      await navigator.clipboard.writeText(fullText);
+      showAdminAlert('Đã sao chép ✅', 'Nội dung thư mời đã được lưu vào khay nhớ tạm.');
+    });
+  }
+
+  if (btnSendOutlookMailto) {
+    btnSendOutlookMailto.addEventListener('click', () => {
+      if (!selectedAttendee) return;
+      // Auto-download QR PNG for convenient attachment
+      downloadQRAsPNG(selectedAttendee);
+
+      const to = selectedAttendee.email ? encodeURIComponent(selectedAttendee.email) : '';
+      const subj = encodeURIComponent(mailPreviewSubject.value);
+      const bdy = encodeURIComponent(mailPreviewBody.value);
+      const mailtoUrl = `mailto:${to}?subject=${subj}&body=${bdy}`;
+
+      window.location.href = mailtoUrl;
+
+      showAdminAlert(
+        'Đã mở Microsoft Outlook 📧',
+        'Ảnh mã QR (.png) cũng đã được tải về máy bạn. Vui lòng đính kèm ảnh QR vừa tải vào cửa sổ Outlook và bấm Gửi!'
+      );
+    });
+  }
+
+  // 7. Email Template Settings Modal
+  async function openEmailTemplateModal() {
+    const tpl = await db.getBusinessDayEmailTemplate();
+    emailTemplateCache = tpl;
+    formTplSubject.value = tpl.subject || '';
+    formTplBody.value = tpl.body || '';
+    modalEmailTemplate.classList.remove('hidden');
+  }
+
+  if (btnBdEmailTemplate) {
+    btnBdEmailTemplate.addEventListener('click', () => openEmailTemplateModal());
+  }
+  if (btnCloseEmailTemplate) {
+    btnCloseEmailTemplate.addEventListener('click', () => modalEmailTemplate.classList.add('hidden'));
+  }
+  if (btnCancelEmailTemplate) {
+    btnCancelEmailTemplate.addEventListener('click', () => modalEmailTemplate.classList.add('hidden'));
+  }
+
+  document.querySelectorAll('.btn-insert-tpl').forEach(chip => {
+    chip.addEventListener('click', () => {
+      const tag = chip.textContent.trim();
+      const pos = formTplBody.selectionStart || formTplBody.value.length;
+      const text = formTplBody.value;
+      formTplBody.value = text.slice(0, pos) + tag + text.slice(pos);
+      formTplBody.focus();
+      formTplBody.selectionStart = formTplBody.selectionEnd = pos + tag.length;
+    });
+  });
+
+  if (btnResetEmailTemplateDefault) {
+    btnResetEmailTemplateDefault.addEventListener('click', () => {
+      formTplSubject.value = '[HOÀNG ANH] Thư Mời & Mã QR Tham Dự Sự Kiện Business Day 2026 - {FULL_NAME}';
+      formTplBody.value = `Kính gửi Anh/Chị {FULL_NAME} ({MSNV} - {DEPARTMENT}),
+
+Phòng Nhân sự trân trọng kính mời Anh/Chị tham dự Sự Kiện Business Day 2026 diễn ra vào cuối tháng 12.
+
+THÔNG TIN ĐIỂM DANH CÁ NHÂN:
+- Họ và tên: {FULL_NAME}
+- Mã định danh: {MSNV}
+- Phòng ban / Bộ phận: {DEPARTMENT}
+
+Vui lòng lưu lại hình ảnh Mã QR đính kèm thư này và mang theo điện thoại khi đến tham dự sự kiện.
+Khi đến bàn đón tiếp, Ban tổ chức sẽ quét mã QR của Anh/Chị để điểm danh và cấp Số May Mắn tham gia chương trình Bốc Thăm Trúng Thưởng!
+
+Trân trọng,
+Phòng Nhân Sự - Hoàng Anh Group`;
+    });
+  }
+
+  if (formEmailTemplate) {
+    formEmailTemplate.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const updated = {
+        subject: formTplSubject.value.trim(),
+        body: formTplBody.value.trim()
+      };
+      const res = await db.saveBusinessDayEmailTemplate(updated);
+      if (res.success) {
+        emailTemplateCache = updated;
+        modalEmailTemplate.classList.add('hidden');
+        showAdminAlert('Đã lưu mẫu email ✅', 'Cấu hình thư mời Business Day đã được cập nhật thành công.');
+      } else {
+        showAdminAlert('Lỗi lưu mẫu email', res.message);
+      }
+    });
+  }
+
+  // 8. Add / Edit Attendee & Guest
+  function openAddAttendanceUserModal() {
+    formBdUser.reset();
+    formBdUserId.value = '';
+    modalBdUserTitle.textContent = 'Thêm Người Tham Dự Business Day';
+    bdTypeEmployee.checked = true;
+    formBdCode.readOnly = false;
+    formBdCode.value = '';
+    formBdCodeHint.textContent = 'Nhập MSNV công ty hoặc chọn Khách Mời để tự sinh mã.';
+    modalAttendanceUser.classList.remove('hidden');
+  }
+
+  function openEditAttendanceUserModal(user) {
+    formBdUserId.value = user.id;
+    modalBdUserTitle.textContent = 'Chỉnh Sửa Thông Tin Người Tham Dự';
+    const isGuest = (user.division || '').toLowerCase().includes('khách') || (user.employee_code || '').startsWith('KM');
+    if (isGuest) bdTypeGuest.checked = true;
+    else bdTypeEmployee.checked = true;
+
+    formBdCode.value = user.employee_code || '';
+    formBdCode.readOnly = user.is_attended; // If attended, lock code
+    formBdFullname.value = user.full_name || '';
+    formBdEmail.value = user.email || '';
+    formBdPosition.value = user.position || '';
+    formBdSubDept.value = user.sub_department || '';
+    formBdDept.value = user.department || '';
+    formBdDivision.value = user.division || 'Khối văn phòng';
+    modalAttendanceUser.classList.remove('hidden');
+  }
+
+  if (bdTypeGuest) {
+    bdTypeGuest.addEventListener('change', () => {
+      if (bdTypeGuest.checked && !formBdUserId.value) {
+        const guestCodes = attendanceUsersCache
+          .map(u => u.employee_code)
+          .filter(c => typeof c === 'string' && c.startsWith('KM.'));
+        let maxNum = 0;
+        guestCodes.forEach(c => {
+          const num = parseInt(c.replace('KM.', ''), 10);
+          if (!isNaN(num) && num > maxNum) maxNum = num;
+        });
+        const nextCode = `KM.${String(maxNum + 1).padStart(3, '0')}`;
+        formBdCode.value = nextCode;
+        formBdDivision.value = 'Khách mời';
+        formBdCodeHint.textContent = `Đã tự sinh mã khách mời: ${nextCode}`;
+      }
+    });
+  }
+
+  if (bdTypeEmployee) {
+    bdTypeEmployee.addEventListener('change', () => {
+      if (bdTypeEmployee.checked && !formBdUserId.value) {
+        formBdCode.value = '';
+        formBdDivision.value = 'Khối văn phòng';
+        formBdCodeHint.textContent = 'Nhập MSNV của nhân viên công ty.';
+      }
+    });
+  }
+
+  if (btnBdAddUser) {
+    btnBdAddUser.addEventListener('click', () => openAddAttendanceUserModal());
+  }
+  if (btnCloseBdUserModal) {
+    btnCloseBdUserModal.addEventListener('click', () => modalAttendanceUser.classList.add('hidden'));
+  }
+  if (btnCancelBdUser) {
+    btnCancelBdUser.addEventListener('click', () => modalAttendanceUser.classList.add('hidden'));
+  }
+
+  if (formBdUser) {
+    formBdUser.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const id = formBdUserId.value;
+      const payload = {
+        employee_code: formBdCode.value.trim().toUpperCase(),
+        full_name: formBdFullname.value.trim(),
+        email: formBdEmail.value.trim() || null,
+        position: formBdPosition.value.trim() || null,
+        sub_department: formBdSubDept.value.trim() || null,
+        department: formBdDept.value.trim() || null,
+        division: formBdDivision.value.trim() || null
+      };
+
+      if (id) {
+        const res = await db.adminUpdateAttendanceUser(id, payload);
+        if (res.success) {
+          modalAttendanceUser.classList.add('hidden');
+          showAdminAlert('Cập nhật thành công ✅', `Đã lưu thông tin của "${payload.full_name}".`);
+          fetchAndRenderBusinessDay();
+        } else {
+          showAdminAlert('Lỗi cập nhật', res.message);
+        }
+      } else {
+        const res = await db.adminCreateAttendanceUser(payload);
+        if (res.success) {
+          modalAttendanceUser.classList.add('hidden');
+          showAdminAlert('Thêm thành công ✅', `Đã thêm "${payload.full_name}" vào danh sách tham dự.`);
+          fetchAndRenderBusinessDay();
+        } else {
+          showAdminAlert('Lỗi thêm mới', res.message);
+        }
+      }
+    });
+  }
+
+  // 9. Search, Filter, Export, Refresh Events
+  if (bdSearchInput) {
+    bdSearchInput.addEventListener('input', () => applyAttendanceFilters());
+  }
+  if (bdFilterStatus) {
+    bdFilterStatus.addEventListener('change', () => applyAttendanceFilters());
+  }
+  if (bdFilterDivision) {
+    bdFilterDivision.addEventListener('change', () => applyAttendanceFilters());
+  }
+  if (bdFilterDept) {
+    bdFilterDept.addEventListener('change', () => applyAttendanceFilters());
+  }
+  if (bdBtnFilterReset) {
+    bdBtnFilterReset.addEventListener('click', () => {
+      bdSearchInput.value = '';
+      bdFilterStatus.value = 'all';
+      bdFilterDivision.value = 'all';
+      bdFilterDept.value = 'all';
+      applyAttendanceFilters();
+    });
+  }
+
+  if (btnBdRefresh) {
+    btnBdRefresh.addEventListener('click', () => fetchAndRenderBusinessDay());
+  }
+
+  if (btnBdExportExcel) {
+    btnBdExportExcel.addEventListener('click', async () => {
+      try {
+        btnBdExportExcel.disabled = true;
+        btnBdExportExcel.innerHTML = '<span>⏳ Đang xuất...</span>';
+        await db.adminExportAttendanceXLSX();
+        showAdminAlert('Xuất thành công ✅', 'File báo cáo điểm danh Business Day đã được tải về.');
+      } catch (e) {
+        showAdminAlert('Lỗi xuất báo cáo', e.message);
+      } finally {
+        btnBdExportExcel.disabled = false;
+        btnBdExportExcel.innerHTML = '<span>📊 Xuất Excel (.xlsx)</span>';
+      }
+    });
+  }
+
+  if (btnBdOpenScanner) {
+    btnBdOpenScanner.addEventListener('click', () => startCameraScanner());
   }
 });

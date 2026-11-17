@@ -80,6 +80,12 @@
           📤 Import Dữ Liệu Excel/CSV
         </button>
 
+        <!-- Business Day 2026 tab -->
+        <button id="tab_business_day_btn"
+          class="tab-btn w-full text-left px-4 py-3 rounded-2xl font-bold text-sm text-slate-600 hover:bg-slate-50 transition flex items-center gap-3 cursor-pointer">
+          🎉 Business Day 2026
+        </button>
+
         <div class="mt-4 pt-4 border-t border-slate-100 px-2 text-[11px] text-slate-400 leading-relaxed">
           Môi trường kết nối:<br />
           <span id="admin_db_mode" class="font-bold text-slate-900">Checking...</span>
@@ -515,6 +521,132 @@
           </div>
         </section>
 
+        <!-- VIEWPORT 5: BUSINESS DAY 2026 -->
+        <section id="section_business_day"
+          class="admin-view bg-white rounded-3xl border border-slate-200 shadow-sm p-6 hidden flex flex-col gap-6">
+          <div class="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
+            <div>
+              <div class="flex items-center gap-2">
+                <span class="px-2.5 py-1 bg-amber-100 text-amber-800 rounded-lg text-[10px] font-black uppercase tracking-wider">Sự Kiện Đặc Biệt</span>
+                <span class="text-xs font-bold text-slate-400">Cuối Tháng 12/2026</span>
+              </div>
+              <h2 class="text-xl font-black text-slate-900 font-['Space_Grotesk'] mt-1">Business Day 2026 — Điểm Danh & Quay Số May Mắn</h2>
+              <p class="text-xs text-slate-500 mt-0.5">Quản lý khách mời, nhân sự tham dự, quét mã QR check-in nhận số may mắn và gửi thư mời Outlook</p>
+            </div>
+            <div class="flex flex-wrap items-center gap-2">
+              <button id="btn_bd_open_scanner"
+                class="px-4 py-2.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-bold text-xs rounded-xl shadow-md transition flex items-center gap-2 cursor-pointer ring-2 ring-emerald-200">
+                <span class="text-base">📷</span>
+                <span>QUÉT CAMERA ĐIỂM DANH</span>
+              </button>
+              <button id="btn_bd_add_user"
+                class="px-3.5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl shadow-md transition flex items-center gap-1.5 cursor-pointer">
+                <span>➕ Thêm Khách / NV</span>
+              </button>
+              <button id="btn_bd_export_excel"
+                class="px-3.5 py-2.5 bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs rounded-xl shadow-md transition flex items-center gap-1.5 cursor-pointer">
+                <span>📊 Xuất Excel (.xlsx)</span>
+              </button>
+              <button id="btn_bd_email_template"
+                class="px-3.5 py-2.5 bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs rounded-xl shadow-md transition flex items-center gap-1.5 cursor-pointer">
+                <span>📧 Cấu Hình Email</span>
+              </button>
+              <button id="btn_bd_refresh"
+                class="px-3 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl transition cursor-pointer"
+                title="Tải lại danh sách">
+                🔄
+              </button>
+            </div>
+          </div>
+
+          <!-- Stats 4 Cards Grid -->
+          <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            <div class="bg-slate-50 border border-slate-100 rounded-2xl p-4 flex flex-col justify-between">
+              <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Tổng tham dự</p>
+              <div class="flex items-baseline justify-between mt-2">
+                <p id="bd_stat_total" class="text-2xl font-black text-slate-900 font-['Space_Grotesk']">0</p>
+                <span class="text-xs font-bold text-slate-400">người</span>
+              </div>
+            </div>
+            <div class="bg-emerald-50/60 border border-emerald-100 rounded-2xl p-4 flex flex-col justify-between">
+              <p class="text-[11px] font-bold text-emerald-700 uppercase tracking-wider">Đã Điểm Danh</p>
+              <div class="flex items-baseline justify-between mt-2">
+                <p id="bd_stat_attended" class="text-2xl font-black text-emerald-600 font-['Space_Grotesk']">0</p>
+                <span id="bd_stat_percent" class="text-xs font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full">0%</span>
+              </div>
+            </div>
+            <div class="bg-amber-50/60 border border-amber-100 rounded-2xl p-4 flex flex-col justify-between">
+              <p class="text-[11px] font-bold text-amber-700 uppercase tracking-wider">Chưa Điểm Danh</p>
+              <div class="flex items-baseline justify-between mt-2">
+                <p id="bd_stat_unattended" class="text-2xl font-black text-amber-600 font-['Space_Grotesk']">0</p>
+                <span class="text-xs font-bold text-amber-600">chờ check-in</span>
+              </div>
+            </div>
+            <div class="bg-indigo-50/60 border border-indigo-100 rounded-2xl p-4 flex flex-col justify-between">
+              <p class="text-[11px] font-bold text-indigo-700 uppercase tracking-wider">Số May Mắn Đã Cấp</p>
+              <div class="flex items-baseline justify-between mt-2">
+                <p id="bd_stat_lucky_issued" class="text-2xl font-black text-indigo-600 font-['Space_Grotesk']">0</p>
+                <span class="text-xs font-bold text-indigo-500">con số</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Filter & Search Bar -->
+          <div class="flex flex-col md:flex-row items-center gap-3 bg-slate-50 p-3 rounded-2xl border border-slate-100">
+            <div class="relative flex-1 w-full">
+              <span class="absolute left-3 top-2.5 text-slate-400 text-xs">🔍</span>
+              <input type="text" id="bd_search_input" placeholder="Tìm theo tên, MSNV, email, bộ phận..."
+                class="w-full pl-8 pr-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+            </div>
+            <div class="flex items-center gap-2 w-full md:w-auto">
+              <select id="bd_filter_status"
+                class="w-full md:w-auto px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                <option value="all">Tất cả trạng thái</option>
+                <option value="attended">✅ Đã điểm danh</option>
+                <option value="unattended">⏳ Chưa điểm danh</option>
+              </select>
+              <select id="bd_filter_division"
+                class="w-full md:w-auto px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                <option value="all">Tất cả Khối</option>
+              </select>
+              <select id="bd_filter_dept"
+                class="w-full md:w-auto px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                <option value="all">Tất cả Phòng ban</option>
+              </select>
+              <button id="bd_btn_filter_reset"
+                class="px-3 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold text-xs rounded-xl transition cursor-pointer whitespace-nowrap">
+                Xóa lọc
+              </button>
+            </div>
+          </div>
+
+          <!-- Attendees Table -->
+          <div class="overflow-x-auto border border-slate-100 rounded-2xl shadow-xs">
+            <table class="w-full text-left text-xs border-collapse">
+              <thead class="bg-slate-50 border-b border-slate-100 text-slate-500 font-bold">
+                <tr>
+                  <th class="py-3 px-3 text-center w-12">STT</th>
+                  <th class="py-3 px-3 w-28">Mã / MSNV</th>
+                  <th class="py-3 px-3">Họ và Tên</th>
+                  <th class="py-3 px-3">Vị Trí / Bộ Phận</th>
+                  <th class="py-3 px-3">Phòng Ban / Khối</th>
+                  <th class="py-3 px-3 text-center w-40">Trạng Thái</th>
+                  <th class="py-3 px-3 text-center w-32">Số May Mắn</th>
+                  <th class="py-3 px-3 text-center w-60">Thao Tác</th>
+                </tr>
+              </thead>
+              <tbody id="bd_table_body" class="divide-y divide-slate-100 font-medium text-slate-700">
+                <!-- Rendered dynamically -->
+              </tbody>
+            </table>
+          </div>
+
+          <div class="flex items-center justify-between text-xs text-slate-400 font-semibold px-1">
+            <span id="bd_table_count">Đang tải danh sách...</span>
+            <span class="text-[11px] text-slate-400">💡 Bấm vào <b>"Xem QR"</b> để tải ảnh mã QR hoặc gửi thư mời Outlook cá nhân.</span>
+          </div>
+        </section>
+
       </div>
     </div>
   </main>
@@ -920,6 +1052,370 @@
             💾 Lưu Bộ Flashcard
           </button>
           <button type="button" id="btn_close_fcset_modal"
+            class="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs transition cursor-pointer">
+            Hủy
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- FLOATING MODAL: VIEW ATTENDEE QR CARD -->
+  <div id="modal_view_qr"
+    class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
+    <div class="bg-white rounded-3xl p-6 max-w-sm w-full shadow-2xl border border-slate-100 flex flex-col items-center text-center">
+      <div class="w-full flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
+        <span class="text-[10px] font-black uppercase tracking-wider text-amber-600 bg-amber-50 px-2.5 py-1 rounded-lg">Thẻ Điểm Danh</span>
+        <button id="btn_close_view_qr" class="text-slate-400 hover:text-slate-600 font-bold p-1 cursor-pointer">✕</button>
+      </div>
+
+      <!-- Branded QR Card Container -->
+      <div class="w-full bg-gradient-to-b from-slate-50 to-amber-50/30 p-5 rounded-2xl border border-slate-200 shadow-inner flex flex-col items-center">
+        <p class="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">HOÀNG ANH GROUP</p>
+        <h4 class="text-xs font-black text-slate-900 uppercase tracking-wider mb-3">BUSINESS DAY 2026</h4>
+
+        <div class="bg-white p-3 rounded-2xl shadow-sm border border-slate-100 inline-block">
+          <canvas id="qr_view_canvas" class="w-44 h-44 mx-auto rounded-lg"></canvas>
+        </div>
+
+        <h3 id="qr_view_fullname" class="text-base font-black text-slate-900 font-['Space_Grotesk'] mt-3">Nguyễn Văn A</h3>
+        <p id="qr_view_code" class="text-xs font-mono font-bold text-amber-700 bg-amber-100/70 px-2 py-0.5 rounded-md mt-1">HA-001</p>
+        <p id="qr_view_position" class="text-xs font-bold text-slate-600 mt-1">Chức vụ / Vị trí</p>
+        <p id="qr_view_dept" class="text-[11px] font-medium text-slate-400 mt-0.5">Phòng Ban • Khối</p>
+
+        <div id="qr_view_status_container" class="mt-3 w-full pt-2 border-t border-slate-200/60 flex flex-col items-center gap-1 hidden">
+          <span id="qr_view_status_badge" class="px-3 py-1 rounded-full text-xs font-bold hidden"></span>
+          <span id="qr_view_lucky_badge" class="text-xs font-black text-amber-600 font-mono hidden"></span>
+        </div>
+      </div>
+
+      <div class="flex flex-col w-full gap-2 mt-4">
+        <div class="flex gap-2">
+          <button id="btn_download_qr_png"
+            class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 rounded-xl text-xs transition flex items-center justify-center gap-1.5 cursor-pointer shadow-sm">
+            <span>📥</span> Tải Thẻ Điểm Danh (.png)
+          </button>
+          <button id="btn_view_qr_outlook"
+            class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 rounded-xl text-xs transition flex items-center justify-center gap-1.5 cursor-pointer shadow-sm">
+            <span>📧</span> Mở Outlook
+          </button>
+        </div>
+        <p class="text-[10px] text-slate-400">Xuất ảnh thẻ hoàn chỉnh gồm logo, mã QR, họ tên và MSNV.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- FLOATING MODAL: CAMERA SCANNER & LUCKY ROLL RESULT -->
+  <div id="modal_qr_scanner"
+    class="hidden fixed inset-0 z-50 flex items-center justify-center p-3 bg-slate-950/80 backdrop-blur-md">
+    <div class="bg-slate-900 border border-slate-800 rounded-3xl max-w-sm w-full shadow-2xl relative overflow-hidden flex flex-col">
+      <!-- Scanner Header -->
+      <div class="flex items-center justify-between p-4 border-b border-slate-800 text-white">
+        <div class="flex items-center gap-2">
+          <span class="text-lg">📷</span>
+          <div>
+            <h3 class="text-sm font-black font-['Space_Grotesk'] text-white">Quét QR Điểm Danh</h3>
+            <p class="text-[10px] text-slate-400">Hướng camera vào mã QR nhân viên</p>
+          </div>
+        </div>
+        <button id="btn_close_qr_scanner" class="text-slate-400 hover:text-white font-bold p-1 cursor-pointer text-lg">✕</button>
+      </div>
+
+      <!-- Camera Body -->
+      <div id="scanner_camera_body" class="p-4 flex flex-col gap-3">
+        <!-- Viewport container for html5-qrcode -->
+        <div class="relative w-full aspect-square rounded-2xl overflow-hidden bg-black border-2 border-slate-800 shadow-inner flex items-center justify-center">
+          <div id="qr_reader_viewport" class="w-full h-full"></div>
+          <!-- Viewfinder Target Reticle -->
+          <div class="pointer-events-none absolute inset-0 m-10 border-2 border-dashed border-emerald-400/50 rounded-2xl animate-pulse flex items-center justify-center">
+            <span class="text-[10px] font-bold text-emerald-400/80 bg-black/60 px-2 py-0.5 rounded-full">Đặt mã QR vào khung</span>
+          </div>
+        </div>
+
+        <!-- Controls -->
+        <div class="flex items-center justify-between">
+          <p id="scanner_camera_status" class="text-[11px] font-bold text-slate-400">Đang bật camera...</p>
+          <button id="btn_scanner_switch_cam"
+            class="text-[11px] font-bold text-emerald-400 bg-emerald-950/60 hover:bg-emerald-900 border border-emerald-800/80 px-2.5 py-1 rounded-lg flex items-center gap-1 cursor-pointer transition">
+            🔄 Đổi Camera
+          </button>
+        </div>
+
+        <!-- Manual Input Fallback -->
+        <div class="pt-2 border-t border-slate-800/80 flex flex-col gap-1.5">
+          <label class="text-[10px] font-bold uppercase tracking-wider text-slate-500">Hoặc nhập mã MSNV / QR thủ công:</label>
+          <div class="flex gap-2">
+            <input type="text" id="scanner_manual_code_input" placeholder="Ví dụ: HA-018 hoặc KM.001..."
+              class="flex-1 bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-xs font-bold text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500" />
+            <button id="btn_scanner_manual_submit"
+              class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-3 py-2 rounded-xl text-xs transition cursor-pointer shadow-sm">
+              Xác nhận
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 🎰 1.5s LUCKY DRAW ROLL OVERLAY (hidden by default) -->
+      <div id="scanner_lucky_animation_overlay"
+        class="hidden absolute inset-0 bg-slate-950/95 z-30 flex flex-col items-center justify-center p-6 text-center">
+        <div class="w-16 h-16 rounded-full bg-amber-500/20 text-amber-400 flex items-center justify-center text-3xl mb-3 animate-spin">
+          🎰
+        </div>
+        <h3 class="text-xs font-black uppercase tracking-widest text-amber-400 mb-1">Đang Quay Số May Mắn...</h3>
+        <p id="scanner_lucky_roller_name" class="text-sm font-bold text-white mb-4">Đang xác thực điểm danh</p>
+        <div class="bg-slate-900 border-2 border-amber-500/60 rounded-3xl py-4 px-8 shadow-2xl">
+          <span id="scanner_lucky_roller_digits" class="text-6xl font-black font-mono tracking-widest text-amber-400">???</span>
+        </div>
+        <p class="text-[11px] text-slate-400 mt-4 animate-pulse">Hệ thống đang cấp phát con số độc nhất...</p>
+      </div>
+
+      <!-- 🎉 RESULT SCREEN CARD (hidden by default) -->
+      <div id="scanner_result_card"
+        class="hidden absolute inset-0 bg-slate-900 z-40 flex flex-col items-center justify-between p-5 overflow-y-auto text-center">
+        <div class="w-full flex justify-end">
+          <button id="btn_result_close" class="text-slate-400 hover:text-white font-bold p-1 text-sm cursor-pointer">✕</button>
+        </div>
+
+        <div class="flex flex-col items-center w-full my-auto">
+          <div class="w-14 h-14 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-3xl mb-2">
+            🎉
+          </div>
+          <span class="px-3 py-1 bg-emerald-500/20 text-emerald-300 rounded-full text-[11px] font-black uppercase tracking-wider mb-1">Điểm Danh Thành Công!</span>
+          <h4 id="result_fullname" class="text-lg font-black text-white font-['Space_Grotesk']">Nguyễn Văn A</h4>
+          <p id="result_code_dept" class="text-xs text-slate-400 mt-0.5">HA-001 • Ban Kế Hoạch</p>
+
+          <!-- Golden Lucky Box -->
+          <div class="w-full bg-gradient-to-b from-amber-500/20 to-amber-600/10 border-2 border-amber-400/80 rounded-2xl p-4 my-3 shadow-xl">
+            <p class="text-[10px] font-black uppercase tracking-widest text-amber-300">SỐ MAY MẮN CỦA BẠN</p>
+            <p id="result_lucky_number" class="text-5xl font-black font-mono text-amber-400 tracking-wider my-1 drop-shadow-lg">#000</p>
+            <p class="text-[10px] text-amber-200/70">Số dự thưởng bốc thăm trúng quà</p>
+          </div>
+
+          <p id="result_attended_at" class="text-[11px] font-mono text-emerald-400 font-bold mb-2">Check-in lúc: 14:30:25</p>
+
+          <div class="w-full bg-slate-800/80 border border-slate-700 rounded-xl p-2.5 text-center mb-2">
+            <p class="text-[11px] font-black text-amber-300">📸 Hãy chụp lại màn hình này ngay!</p>
+            <p class="text-[10px] text-slate-400">Lưu lại để đối chiếu nhận quà bốc thăm may mắn.</p>
+          </div>
+        </div>
+
+        <button id="btn_scanner_next"
+          class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-xl text-xs transition cursor-pointer shadow-lg">
+          Quét Người Tiếp Theo ➡️
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- FLOATING MODAL: ADD / EDIT ATTENDEE & GUEST -->
+  <div id="modal_attendance_user"
+    class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
+    <div class="bg-white rounded-3xl p-6 max-w-sm w-full max-h-[90vh] overflow-y-auto shadow-2xl border border-slate-100">
+      <div class="flex items-center justify-between mb-4 border-b border-slate-100 pb-3">
+        <h3 class="text-base font-black font-['Space_Grotesk'] text-slate-900" id="modal_bd_user_title">Thêm Người Tham Dự</h3>
+        <button id="btn_close_bd_user_modal" class="text-slate-400 hover:text-slate-600 font-bold p-1 cursor-pointer">✕</button>
+      </div>
+
+      <form id="form_bd_user" class="space-y-3.5">
+        <input type="hidden" id="form_bd_user_id" />
+
+        <!-- User Type Switch -->
+        <div>
+          <label class="block text-xs font-bold text-slate-400 mb-1.5">Loại đối tượng</label>
+          <div class="grid grid-cols-2 gap-2">
+            <label class="flex items-center gap-2 p-2.5 border border-slate-200 rounded-xl text-xs font-bold cursor-pointer hover:bg-slate-50">
+              <input type="radio" name="bd_user_type" id="bd_type_employee" value="employee" checked class="text-indigo-600" />
+              <span>🏢 Nhân Viên</span>
+            </label>
+            <label class="flex items-center gap-2 p-2.5 border border-slate-200 rounded-xl text-xs font-bold cursor-pointer hover:bg-slate-50">
+              <input type="radio" name="bd_user_type" id="bd_type_guest" value="guest" class="text-indigo-600" />
+              <span>🌟 Khách Mời</span>
+            </label>
+          </div>
+        </div>
+
+        <div>
+          <label for="form_bd_code" class="block text-xs font-bold text-slate-400 mb-1">Mã nhân viên / Mã khách *</label>
+          <input type="text" id="form_bd_code" required
+            class="block w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-bold uppercase font-mono"
+            placeholder="HA-001 hoặc KM.001" />
+          <p class="text-[10px] text-slate-400 mt-1" id="form_bd_code_hint">Nhập MSNV công ty hoặc hệ thống tự sinh mã KM.xxx cho khách mời.</p>
+        </div>
+
+        <div>
+          <label for="form_bd_fullname" class="block text-xs font-bold text-slate-400 mb-1">Họ và tên *</label>
+          <input type="text" id="form_bd_fullname" required
+            class="block w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-bold"
+            placeholder="Nguyễn Văn A" />
+        </div>
+
+        <div>
+          <label for="form_bd_email" class="block text-xs font-bold text-slate-400 mb-1">Email nhận thư mời (tùy chọn)</label>
+          <input type="email" id="form_bd_email"
+            class="block w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-bold"
+            placeholder="nguyenvana@hoanganh.com" />
+        </div>
+
+        <div>
+          <label for="form_bd_position" class="block text-xs font-bold text-slate-400 mb-1">Vị trí / Chức vụ</label>
+          <input type="text" id="form_bd_position"
+            class="block w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-bold"
+            placeholder="Chuyên viên HR / Đối tác..." />
+        </div>
+
+        <div>
+          <label for="form_bd_sub_dept" class="block text-xs font-bold text-slate-400 mb-1">Bộ phận</label>
+          <input type="text" id="form_bd_sub_dept"
+            class="block w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-bold"
+            placeholder="Tuyển dụng & Đào tạo / Sản xuất..." />
+        </div>
+
+        <div>
+          <label for="form_bd_dept" class="block text-xs font-bold text-slate-400 mb-1">Phòng ban</label>
+          <input type="text" id="form_bd_dept"
+            class="block w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-bold"
+            placeholder="Phòng Nhân Sự & CNTT" />
+        </div>
+
+        <div>
+          <label for="form_bd_division" class="block text-xs font-bold text-slate-400 mb-1">Khối làm việc</label>
+          <select id="form_bd_division"
+            class="block w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-bold">
+            <option value="Khối văn phòng">Khối văn phòng</option>
+            <option value="Khối sản xuất">Khối sản xuất</option>
+            <option value="Khách mời">Khách mời</option>
+            <option value="Khác">Khác</option>
+          </select>
+        </div>
+
+        <div class="flex gap-2 pt-2">
+          <button type="submit"
+            class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 rounded-xl text-xs transition cursor-pointer">
+            💾 Lưu Thông Tin
+          </button>
+          <button type="button" id="btn_cancel_bd_user"
+            class="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs transition cursor-pointer">
+            Hủy
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- FLOATING MODAL: EMAIL PREVIEW & OUTLOOK -->
+  <div id="modal_email_preview"
+    class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
+    <div class="bg-white rounded-3xl p-6 max-w-lg w-full max-h-[90vh] overflow-y-auto shadow-2xl border border-slate-100 flex flex-col gap-4">
+      <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+        <div>
+          <h3 class="text-base font-black font-['Space_Grotesk'] text-slate-900">Xem Trước Thư Mời & Gửi Outlook</h3>
+          <p class="text-xs text-slate-500">Mở Outlook với người nhận và nội dung đã điền sẵn</p>
+        </div>
+        <button id="btn_close_email_preview" class="text-slate-400 hover:text-slate-600 font-bold p-1 cursor-pointer">✕</button>
+      </div>
+
+      <!-- Attendee & Email Info -->
+      <div class="bg-slate-50 p-3 rounded-2xl border border-slate-100 flex items-center justify-between text-xs font-bold">
+        <div>
+          <span class="text-slate-400">Người nhận:</span>
+          <span id="mail_preview_name" class="text-slate-900 ml-1">...</span>
+        </div>
+        <div>
+          <span class="text-slate-400">Email:</span>
+          <span id="mail_preview_to" class="text-indigo-600 font-mono ml-1">...</span>
+        </div>
+      </div>
+
+      <!-- Subject Preview -->
+      <div>
+        <label class="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1">Tiêu đề thư (Subject)</label>
+        <input type="text" id="mail_preview_subject" readonly
+          class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-800" />
+      </div>
+
+      <!-- Body Preview -->
+      <div>
+        <label class="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1">Nội dung thư (Body)</label>
+        <textarea id="mail_preview_body" readonly rows="7"
+          class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 font-mono resize-none leading-relaxed"></textarea>
+      </div>
+
+      <!-- Notice box -->
+      <div class="bg-amber-50 border border-amber-100 rounded-2xl p-3 flex gap-2.5 text-xs text-amber-800">
+        <span class="text-base">💡</span>
+        <div class="space-y-1 text-[11px] leading-relaxed">
+          <p class="font-bold">Cách thức đính kèm ảnh thẻ khi mở Outlook:</p>
+          <p>Khi bạn bấm <b>"Mở Microsoft Outlook"</b>, máy sẽ tự động tải file ảnh thẻ điểm danh có QR (.png) về thư mục Downloads. Bạn chỉ cần đính kèm hoặc kéo thả file ảnh thẻ vào cửa sổ email Outlook vừa mở và gửi đi!</p>
+        </div>
+      </div>
+
+      <div class="flex flex-wrap gap-2 pt-1">
+        <button id="btn_send_outlook_mailto"
+          class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 rounded-xl text-xs transition flex items-center justify-center gap-1.5 cursor-pointer shadow-md">
+          <span>🚀</span> Mở Microsoft Outlook
+        </button>
+        <button id="btn_download_preview_qr"
+          class="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl text-xs transition flex items-center gap-1.5 cursor-pointer shadow-sm">
+          <span>📥</span> Tải Thẻ Điểm Danh (.png)
+        </button>
+        <button id="btn_copy_email_content"
+          class="px-3.5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs transition cursor-pointer">
+          📋 Sao chép
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- FLOATING MODAL: EMAIL TEMPLATE SETTINGS -->
+  <div id="modal_email_template"
+    class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
+    <div class="bg-white rounded-3xl p-6 max-w-lg w-full max-h-[90vh] overflow-y-auto shadow-2xl border border-slate-100 flex flex-col gap-4">
+      <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+        <div>
+          <h3 class="text-base font-black font-['Space_Grotesk'] text-slate-900">Cấu Hình Mẫu Email Thư Mời</h3>
+          <p class="text-xs text-slate-500">Tùy biến tiêu đề và nội dung email gửi cho khách và nhân viên</p>
+        </div>
+        <button id="btn_close_email_template" class="text-slate-400 hover:text-slate-600 font-bold p-1 cursor-pointer">✕</button>
+      </div>
+
+      <form id="form_email_template" class="space-y-3.5">
+        <div>
+          <label for="form_tpl_subject" class="block text-xs font-bold text-slate-500 mb-1">Tiêu đề email</label>
+          <input type="text" id="form_tpl_subject" required
+            class="block w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-800" />
+        </div>
+
+        <div>
+          <label for="form_tpl_body" class="block text-xs font-bold text-slate-500 mb-1">Nội dung email</label>
+          <textarea id="form_tpl_body" rows="9" required
+            class="block w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 font-mono resize-none leading-relaxed"></textarea>
+        </div>
+
+        <!-- Placeholder Chips -->
+        <div>
+          <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">Bấm vào để chèn biến thay thế:</p>
+          <div class="flex flex-wrap gap-1.5 text-[11px] font-mono">
+            <button type="button" class="btn-insert-tpl px-2 py-0.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded font-bold cursor-pointer">{FULL_NAME}</button>
+            <button type="button" class="btn-insert-tpl px-2 py-0.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded font-bold cursor-pointer">{MSNV}</button>
+            <button type="button" class="btn-insert-tpl px-2 py-0.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded font-bold cursor-pointer">{POSITION}</button>
+            <button type="button" class="btn-insert-tpl px-2 py-0.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded font-bold cursor-pointer">{DEPARTMENT}</button>
+            <button type="button" class="btn-insert-tpl px-2 py-0.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded font-bold cursor-pointer">{DIVISION}</button>
+            <button type="button" class="btn-insert-tpl px-2 py-0.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded font-bold cursor-pointer">{EVENT_NAME}</button>
+            <button type="button" class="btn-insert-tpl px-2 py-0.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded font-bold cursor-pointer">{DATE}</button>
+            <button type="button" class="btn-insert-tpl px-2 py-0.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded font-bold cursor-pointer">{LOCATION}</button>
+          </div>
+        </div>
+
+        <div class="flex gap-2 pt-2">
+          <button type="submit"
+            class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 rounded-xl text-xs transition cursor-pointer">
+            💾 Lưu Cấu Hình
+          </button>
+          <button type="button" id="btn_reset_email_template_default"
+            class="px-3.5 py-2.5 bg-amber-50 hover:bg-amber-100 text-amber-700 font-bold rounded-xl text-xs transition cursor-pointer">
+            🔄 Mặc Định
+          </button>
+          <button type="button" id="btn_cancel_email_template"
             class="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs transition cursor-pointer">
             Hủy
           </button>
