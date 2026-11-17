@@ -2501,17 +2501,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   }
 
-  if (btnScannerNext) {
-    btnScannerNext.addEventListener('click', async () => {
-      scannerResultCard.classList.add('hidden');
-      await startCameraScanner();
-    });
-  }
-  if (btnResultClose) {
-    btnResultClose.addEventListener('click', () => {
-      stopCameraScanner();
-    });
-  }
   if (btnCloseQrScanner) {
     btnCloseQrScanner.addEventListener('click', () => {
       stopCameraScanner();

@@ -34,6 +34,10 @@
   .text-kahoot-purple { color: var(--kahoot-purple); }
 }
 
+.hidden {
+  display: none !important;
+}
+
 body {
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
   background-color: #f3f4f6;
