@@ -1744,6 +1744,26 @@ document.addEventListener('DOMContentLoaded', async () => {
   const formTplSubject = document.getElementById('form_tpl_subject');
   const formTplBody = document.getElementById('form_tpl_body');
 
+  // Modal Lucky Result (Celebration Card for Screenshot & Review)
+  const modalLuckyResult = document.getElementById('modal_lucky_result');
+  const btnCloseLuckyResult = document.getElementById('btn_close_lucky_result');
+  const btnDismissLuckyResult = document.getElementById('btn_dismiss_lucky_result');
+  const btnLuckyNextScan = document.getElementById('btn_lucky_next_scan');
+  const btnDownloadLuckyCard = document.getElementById('btn_download_lucky_card');
+  const popupLuckyNumber = document.getElementById('popup_lucky_number');
+  const popupLuckyFullname = document.getElementById('popup_lucky_fullname');
+  const popupLuckyCode = document.getElementById('popup_lucky_code');
+  const popupLuckyPosition = document.getElementById('popup_lucky_position');
+  const popupLuckyDept = document.getElementById('popup_lucky_dept');
+  const popupLuckyTime = document.getElementById('popup_lucky_time');
+  const popupLuckyQrCanvas = document.getElementById('popup_lucky_qr_canvas');
+
+  // Format Lucky Number helper (3 digits, e.g. #001 to #131)
+  function formatLuckyNumber(num) {
+    if (!num && num !== 0) return '—';
+    return String(num).padStart(3, '0');
+  }
+
   // State
   let attendanceUsersCache = [];
   let html5QrScannerInstance = null;
@@ -1939,12 +1959,13 @@ document.addEventListener('DOMContentLoaded', async () => {
            </span>`;
 
       const luckyBadge = u.lucky_number
-        ? `<span class="inline-block px-3 py-1 bg-gradient-to-r from-amber-100 to-amber-200 text-amber-900 border border-amber-300 rounded-xl font-mono font-black text-xs shadow-xs tracking-wider">#${u.lucky_number}</span>`
+        ? `<button class="btn-bd-view-lucky inline-block px-2.5 py-1 bg-gradient-to-r from-amber-100 to-amber-200 hover:from-amber-200 hover:to-amber-300 text-amber-900 border border-amber-300 rounded-xl font-mono font-black text-xs shadow-xs tracking-wider cursor-pointer transition active:scale-95" data-id="${u.id}" title="Bấm để xem thẻ số may mắn & chụp ảnh">#${formatLuckyNumber(u.lucky_number)}</button>`
         : `<span class="text-slate-300 font-bold">—</span>`;
 
       const checkInActionBtn = u.is_attended
-        ? `<button class="btn-bd-reset p-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-lg text-xs font-bold transition cursor-pointer" title="Hủy điểm danh để check-in lại" data-id="${u.id}">🔄 Hủy</button>`
-        : `<button class="btn-bd-quick-checkin px-2.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold transition flex items-center gap-1 cursor-pointer shadow-xs" data-id="${u.id}">⚡ Check-in</button>`;
+        ? `<button class="btn-bd-view-lucky px-2 py-1.5 bg-amber-500 hover:bg-amber-600 text-white rounded-lg text-xs font-bold transition flex items-center gap-1 cursor-pointer shadow-xs active:scale-95" data-id="${u.id}" title="Xem lại số may mắn & chụp ảnh">🎉 Xem Số</button>
+           <button class="btn-bd-reset p-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-lg text-xs font-bold transition cursor-pointer" title="Hủy điểm danh để check-in lại" data-id="${u.id}">🔄 Hủy</button>`
+        : `<button class="btn-bd-quick-checkin px-2.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold transition flex items-center gap-1 cursor-pointer shadow-xs active:scale-95" data-id="${u.id}">⚡ Check-in</button>`;
 
       tr.innerHTML = `
         <td class="py-3 px-3 text-center text-slate-400 font-bold">${idx + 1}</td>
@@ -1989,6 +2010,14 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   function attachTableActionListeners() {
+    // 🎉 View Lucky Result Popup (Xem lại số may mắn & chụp ảnh)
+    document.querySelectorAll('.btn-bd-view-lucky').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const u = attendanceUsersCache.find(x => x.id === btn.dataset.id);
+        if (u) openLuckyResultModal(u, false);
+      });
+    });
+
     // 🎫 View QR
     document.querySelectorAll('.btn-bd-view-qr').forEach(btn => {
       btn.addEventListener('click', () => {
@@ -2196,7 +2225,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Status Pill (Chỉ hiển thị khi đã check-in / có số may mắn)
     if (user.is_attended && user.lucky_number) {
-      const luckyText = `🎉 ĐÃ CHECK-IN • SỐ MAY MẮN: #${user.lucky_number}`;
+      const luckyText = `🎉 ĐÃ CHECK-IN • SỐ MAY MẮN: #${formatLuckyNumber(user.lucky_number)}`;
       ctx.font = 'bold 13px system-ui, -apple-system, sans-serif';
       const statusMetrics = ctx.measureText(luckyText);
       const sW = statusMetrics.width + 32;
@@ -2276,10 +2305,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     scannerLuckyRollerName.textContent = attendee.full_name + (attendee.employee_code ? ` (${attendee.employee_code})` : '');
     scannerLuckyRollerDigits.textContent = '???';
 
-    // Start rolling slot number animation
+    // Start rolling slot number animation (between 1 and total attendees)
+    const maxSpin = Math.max(attendanceUsersCache.length || 131, 131);
     const rollTimer = setInterval(() => {
-      const randNum = Math.floor(Math.random() * 900 + 100);
-      scannerLuckyRollerDigits.textContent = randNum;
+      const randNum = Math.floor(Math.random() * maxSpin + 1);
+      scannerLuckyRollerDigits.textContent = '#' + formatLuckyNumber(randNum);
       playSlotTickSound();
     }, 60);
 
@@ -2299,7 +2329,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
 
       const assignedNum = checkInResult.data.lucky_number;
-      scannerLuckyRollerDigits.textContent = `#${assignedNum}`;
+      scannerLuckyRollerDigits.textContent = `#${formatLuckyNumber(assignedNum)}`;
 
       // Winning sound and confetti!
       playWinFanfare();
@@ -2309,18 +2339,16 @@ document.addEventListener('DOMContentLoaded', async () => {
         origin: { y: 0.6 }
       });
 
-      // Brief pause then show celebratory result card
+      // Brief pause then close camera/overlay and show celebratory result popup
       await new Promise(r => setTimeout(r, 450));
       scannerLuckyAnimationOverlay.classList.add('hidden');
-      scannerResultCard.classList.remove('hidden');
-
-      resultFullname.textContent = checkInResult.data.full_name;
-      resultCodeDept.textContent = `${checkInResult.data.employee_code || '—'} • ${checkInResult.data.department || checkInResult.data.division || ''}`;
-      resultLuckyNumber.textContent = `#${assignedNum}`;
-      resultAttendedAt.textContent = `Check-in lúc: ${new Date(checkInResult.data.attended_at).toLocaleTimeString('vi-VN')}`;
+      modalQrScanner.classList.add('hidden');
 
       // Refresh background table & stats
       fetchAndRenderBusinessDay();
+
+      // Open the dedicated screenshot-ready Lucky Result popup!
+      await openLuckyResultModal(checkInResult.data, true);
     } catch (err) {
       clearInterval(rollTimer);
       scannerLuckyAnimationOverlay.classList.add('hidden');
@@ -2329,6 +2357,65 @@ document.addEventListener('DOMContentLoaded', async () => {
     } finally {
       isProcessingCheckIn = false;
     }
+  }
+
+  // 3b. Open Celebration Lucky Result Modal (Screenshot & Review)
+  async function openLuckyResultModal(attendee, isFromScanner = false) {
+    if (!attendee) return;
+    selectedAttendee = attendee;
+
+    const luckyNumStr = formatLuckyNumber(attendee.lucky_number);
+    popupLuckyNumber.textContent = '#' + luckyNumStr;
+    popupLuckyFullname.textContent = attendee.full_name || 'Người tham dự';
+    popupLuckyCode.textContent = attendee.employee_code || 'KM';
+    popupLuckyPosition.textContent = attendee.position || 'Nhân sự tham dự';
+    popupLuckyDept.textContent = [attendee.department, attendee.division].filter(Boolean).join(' • ') || 'Hoàng Anh Group';
+
+    const timeStr = attendee.attended_at
+      ? new Date(attendee.attended_at).toLocaleTimeString('vi-VN') + ' - ' + new Date(attendee.attended_at).toLocaleDateString('vi-VN')
+      : new Date().toLocaleTimeString('vi-VN');
+    popupLuckyTime.textContent = `⏰ Check-in: ${timeStr}`;
+
+    if (btnLuckyNextScan) {
+      if (isFromScanner) {
+        btnLuckyNextScan.classList.remove('hidden');
+      } else {
+        btnLuckyNextScan.classList.add('hidden');
+      }
+    }
+
+    // Render small QR canvas thumbnail
+    if (popupLuckyQrCanvas && attendee.qr_code_data) {
+      try {
+        await QRCode.toCanvas(popupLuckyQrCanvas, attendee.qr_code_data, {
+          width: 80,
+          margin: 1,
+          color: { dark: '#0F172A', light: '#FFFFFF' }
+        });
+      } catch (e) {
+        console.error('Lỗi render QR canvas thumbnail:', e);
+      }
+    }
+
+    modalLuckyResult.classList.remove('hidden');
+  }
+
+  if (btnCloseLuckyResult) {
+    btnCloseLuckyResult.addEventListener('click', () => modalLuckyResult.classList.add('hidden'));
+  }
+  if (btnDismissLuckyResult) {
+    btnDismissLuckyResult.addEventListener('click', () => modalLuckyResult.classList.add('hidden'));
+  }
+  if (btnDownloadLuckyCard) {
+    btnDownloadLuckyCard.addEventListener('click', () => {
+      if (selectedAttendee) downloadQRAsPNG(selectedAttendee);
+    });
+  }
+  if (btnLuckyNextScan) {
+    btnLuckyNextScan.addEventListener('click', async () => {
+      modalLuckyResult.classList.add('hidden');
+      await startCameraScanner();
+    });
   }
 
   // 4. Camera Scanner Controller
@@ -2456,7 +2543,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       qrViewStatusBadge.textContent = `✅ Đã điểm danh (${user.attended_at ? new Date(user.attended_at).toLocaleTimeString('vi-VN') : ''})`;
       if (user.lucky_number) {
         qrViewLuckyBadge.classList.remove('hidden');
-        qrViewLuckyBadge.textContent = `Số May Mắn: #${user.lucky_number}`;
+        qrViewLuckyBadge.textContent = `Số May Mắn: #${formatLuckyNumber(user.lucky_number)}`;
       } else {
         qrViewLuckyBadge.classList.add('hidden');
       }

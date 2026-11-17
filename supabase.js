@@ -1201,25 +1201,31 @@ async adminDeleteUser(id) {
   },
 
   async _assignLuckyNumber() {
-    const { data: users } = await supabase
-      .from('attendance_users')
-      .select('lucky_number')
-      .not('lucky_number', 'is', null);
+    // 1. Lấy tổng số lượng người trong danh sách tham dự và các số đã cấp
+    const [{ count: totalCount }, { data: users, error }] = await Promise.all([
+      supabase.from('attendance_users').select('*', { count: 'exact', head: true }),
+      supabase.from('attendance_users').select('lucky_number').not('lucky_number', 'is', null)
+    ]);
+
+    if (error) console.error('Lỗi truy vấn lucky_number:', error);
 
     const taken = new Set((users || []).map(u => u.lucky_number));
 
-    // Dải số may mắn 3 chữ số từ 101 đến 999
+    // Dải số may mắn chạy từ 1 đến đúng tổng số người tham dự (tối thiểu 131, tự động tăng khi add thêm khách)
+    const maxPool = Math.max(totalCount || 131, 131);
     const available = [];
-    for (let n = 101; n <= 999; n++) {
+    for (let n = 1; n <= maxPool; n++) {
       if (!taken.has(n)) available.push(n);
     }
 
+    // Nếu hết số trong khoảng 1..maxPool, mở rộng tăng dần tiếp
     if (available.length === 0) {
-      for (let n = 1000; n <= 9999; n++) {
-        if (!taken.has(n)) { available.push(n); break; }
-      }
+      let extra = maxPool + 1;
+      while (taken.has(extra)) extra++;
+      return extra;
     }
 
+    // Chọn ngẫu nhiên trong dải số hợp lệ từ 1 đến N
     const randomIdx = Math.floor(Math.random() * available.length);
     return available[randomIdx];
   },

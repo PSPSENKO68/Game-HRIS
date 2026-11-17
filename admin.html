@@ -1207,6 +1207,77 @@
     </div>
   </div>
 
+  <!-- FLOATING MODAL: CELEBRATION LUCKY RESULT CARD (CHỤP MÀN HÌNH & XEM LẠI) -->
+  <div id="modal_lucky_result"
+    class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md">
+    <div class="bg-white rounded-3xl p-6 max-w-sm w-full shadow-2xl border border-amber-200 relative overflow-hidden flex flex-col items-center text-center">
+      <!-- Decorative background glow -->
+      <div class="absolute -top-16 -right-16 w-36 h-36 bg-amber-200/40 rounded-full blur-2xl pointer-events-none"></div>
+      <div class="absolute -bottom-16 -left-16 w-36 h-36 bg-emerald-200/40 rounded-full blur-2xl pointer-events-none"></div>
+
+      <!-- Top Close Button -->
+      <div class="w-full flex items-center justify-between pb-2 border-b border-slate-100 mb-3 relative z-10">
+        <span class="text-[10px] font-black uppercase tracking-wider text-amber-700 bg-amber-50 px-2.5 py-1 rounded-lg">🎉 Check-in Thành Công</span>
+        <button id="btn_close_lucky_result" class="text-slate-400 hover:text-slate-700 font-bold p-1 cursor-pointer text-base">✕</button>
+      </div>
+
+      <!-- Result Card Body (Ideal for Screenshot!) -->
+      <div id="lucky_result_screenshot_box" class="w-full bg-gradient-to-b from-slate-50 to-amber-50/40 p-4 rounded-2xl border border-slate-200 shadow-inner flex flex-col items-center relative z-10">
+        <p class="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-0.5">HOÀNG ANH GROUP</p>
+        <h4 class="text-xs font-black text-slate-900 uppercase tracking-wider mb-2">BUSINESS DAY 2026</h4>
+
+        <!-- Golden Lucky Number Box -->
+        <div class="w-full bg-gradient-to-r from-amber-500 via-amber-400 to-amber-500 p-0.5 rounded-2xl shadow-md my-1">
+          <div class="bg-gradient-to-b from-amber-50 to-white p-3 rounded-[14px] flex flex-col items-center">
+            <span class="text-[10px] font-black uppercase tracking-widest text-amber-700">SỐ MAY MẮN CỦA BẠN</span>
+            <span id="popup_lucky_number" class="text-5xl font-black font-mono tracking-wider text-amber-600 drop-shadow-sm my-1">#000</span>
+            <span class="text-[10px] text-slate-500 font-medium">Dùng để bốc thăm quay thưởng trúng quà</span>
+          </div>
+        </div>
+
+        <!-- Attendee Details -->
+        <h3 id="popup_lucky_fullname" class="text-lg font-black text-slate-900 font-['Space_Grotesk'] mt-2.5">Trần Hoàng Phương</h3>
+        <p id="popup_lucky_code" class="text-xs font-mono font-bold text-amber-700 bg-amber-100/80 px-2.5 py-0.5 rounded-md mt-1">HA.0243</p>
+        <p id="popup_lucky_position" class="text-xs font-bold text-slate-700 mt-1">Production Line</p>
+        <p id="popup_lucky_dept" class="text-[11px] font-medium text-slate-500 mt-0.5">Production • Nhà máy</p>
+
+        <!-- Attended Timestamp -->
+        <p id="popup_lucky_time" class="text-[10px] font-mono text-emerald-700 font-bold bg-emerald-50 px-2.5 py-0.5 rounded-full mt-2">
+          ⏰ Check-in: 09:56:38
+        </p>
+
+        <!-- Small QR preview thumbnail -->
+        <div class="mt-2.5 p-1 bg-white rounded-lg border border-slate-200 inline-block shadow-2xs">
+          <canvas id="popup_lucky_qr_canvas" class="w-20 h-20 mx-auto"></canvas>
+        </div>
+
+        <!-- Screenshot Hint Banner -->
+        <div class="w-full bg-amber-100/60 border border-amber-200/80 rounded-xl p-2 text-center mt-2.5">
+          <p class="text-[11px] font-bold text-amber-800">📸 Bạn hãy chụp lại màn hình này nhé!</p>
+          <p class="text-[10px] text-amber-700">Lưu ảnh để đối chiếu nhận giải bốc thăm may mắn.</p>
+        </div>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="flex flex-col w-full gap-2 mt-3.5 relative z-10">
+        <button id="btn_download_lucky_card"
+          class="w-full bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white font-bold py-2.5 rounded-xl text-xs transition flex items-center justify-center gap-1.5 cursor-pointer shadow-md">
+          <span>📸</span> Tải Ảnh Thẻ Kết Quả (.png)
+        </button>
+        <div class="flex gap-2 w-full">
+          <button id="btn_lucky_next_scan"
+            class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 rounded-xl text-xs transition flex items-center justify-center gap-1 cursor-pointer shadow-xs hidden">
+            <span>📷</span> Quét Tiếp ➡️
+          </button>
+          <button id="btn_dismiss_lucky_result"
+            class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-2 rounded-xl text-xs transition cursor-pointer">
+            Đóng
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- FLOATING MODAL: ADD / EDIT ATTENDEE & GUEST -->
   <div id="modal_attendance_user"
     class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
