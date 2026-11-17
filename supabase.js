@@ -1305,7 +1305,12 @@ async adminDeleteUser(id) {
     }
 
     if (user.is_attended) {
-      return { success: false, message: `Nhân viên "${user.full_name}" đã điểm danh trước đó với số #${user.lucky_number}.` };
+      return {
+        success: false,
+        reason: 'already_attended',
+        user,
+        message: `Nhân viên "${user.full_name}" đã điểm danh trước đó với số #${user.lucky_number}.`
+      };
     }
 
     const luckyNumber = await this._assignLuckyNumber();

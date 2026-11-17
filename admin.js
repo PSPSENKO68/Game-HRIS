@@ -1694,17 +1694,10 @@ document.addEventListener('DOMContentLoaded', async () => {
   const scannerManualCodeInput = document.getElementById('scanner_manual_code_input');
   const btnScannerManualSubmit = document.getElementById('btn_scanner_manual_submit');
 
-  const scannerLuckyAnimationOverlay = document.getElementById('scanner_lucky_animation_overlay');
-  const scannerLuckyRollerName = document.getElementById('scanner_lucky_roller_name');
-  const scannerLuckyRollerDigits = document.getElementById('scanner_lucky_roller_digits');
-
-  const scannerResultCard = document.getElementById('scanner_result_card');
-  const btnResultClose = document.getElementById('btn_result_close');
-  const resultFullname = document.getElementById('result_fullname');
-  const resultCodeDept = document.getElementById('result_code_dept');
-  const resultLuckyNumber = document.getElementById('result_lucky_number');
-  const resultAttendedAt = document.getElementById('result_attended_at');
-  const btnScannerNext = document.getElementById('btn_scanner_next');
+  // Standalone Lucky Draw Rolling Overlay
+  const modalLuckyRoll = document.getElementById('modal_lucky_roll');
+  const luckyRollerName = document.getElementById('lucky_roller_name');
+  const luckyRollerDigits = document.getElementById('lucky_roller_digits');
 
   // Modal Attendance User
   const modalAttendanceUser = document.getElementById('modal_attendance_user');
@@ -2292,24 +2285,25 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   // 3. 1.5s Lucky Roll Animation & Check-in Execution
-  async function triggerLuckyDrawAndCheckIn(attendee, checkInAction) {
+  async function triggerLuckyDrawAndCheckIn(attendee, checkInAction, isFromScanner = false) {
     if (isProcessingCheckIn) return;
     isProcessingCheckIn = true;
 
-    // Show scanner modal and animation overlay
-    modalQrScanner.classList.remove('hidden');
-    scannerCameraBody.classList.remove('hidden');
-    scannerResultCard.classList.add('hidden');
-    scannerLuckyAnimationOverlay.classList.remove('hidden');
+    // If check-in originated from camera scanner, stop camera & close scanner modal immediately
+    if (isFromScanner) {
+      await stopCameraScanner();
+    }
 
-    scannerLuckyRollerName.textContent = attendee.full_name + (attendee.employee_code ? ` (${attendee.employee_code})` : '');
-    scannerLuckyRollerDigits.textContent = '???';
+    // Show standalone lucky roll overlay
+    modalLuckyRoll.classList.remove('hidden');
+    luckyRollerName.textContent = attendee.full_name + (attendee.employee_code ? ` (${attendee.employee_code})` : '');
+    luckyRollerDigits.textContent = '#???';
 
     // Start rolling slot number animation (between 1 and total attendees)
     const maxSpin = Math.max(attendanceUsersCache.length || 131, 131);
     const rollTimer = setInterval(() => {
       const randNum = Math.floor(Math.random() * maxSpin + 1);
-      scannerLuckyRollerDigits.textContent = '#' + formatLuckyNumber(randNum);
+      luckyRollerDigits.textContent = '#' + formatLuckyNumber(randNum);
       playSlotTickSound();
     }, 60);
 
@@ -2322,14 +2316,25 @@ document.addEventListener('DOMContentLoaded', async () => {
       clearInterval(rollTimer);
 
       if (!checkInResult || !checkInResult.success) {
-        scannerLuckyAnimationOverlay.classList.add('hidden');
-        showAdminAlert('Điểm danh không thành công', checkInResult?.message || 'Có lỗi xảy ra khi điểm danh.');
+        modalLuckyRoll.classList.add('hidden');
+        if (checkInResult?.reason === 'already_attended') {
+          // If already attended, open their result card with existing lucky number!
+          const existingUser = checkInResult.data || checkInResult.user || attendanceUsersCache.find(u => u.id === attendee.id || u.employee_code === attendee.employee_code);
+          if (existingUser) {
+            await openLuckyResultModal(existingUser, isFromScanner);
+          } else {
+            showAdminAlert('Thông báo điểm danh', checkInResult?.message || 'Nhân viên đã điểm danh trước đó.');
+          }
+        } else {
+          showAdminAlert('Điểm danh không thành công', checkInResult?.message || 'Có lỗi xảy ra khi điểm danh.');
+        }
         isProcessingCheckIn = false;
         return;
       }
 
-      const assignedNum = checkInResult.data.lucky_number;
-      scannerLuckyRollerDigits.textContent = `#${formatLuckyNumber(assignedNum)}`;
+      const resultUser = checkInResult.user || checkInResult.data;
+      const assignedNum = resultUser?.lucky_number || checkInResult.luckyNumber;
+      luckyRollerDigits.textContent = `#${formatLuckyNumber(assignedNum)}`;
 
       // Winning sound and confetti!
       playWinFanfare();
@@ -2339,19 +2344,18 @@ document.addEventListener('DOMContentLoaded', async () => {
         origin: { y: 0.6 }
       });
 
-      // Brief pause then close camera/overlay and show celebratory result popup
+      // Brief pause then close lucky roll overlay
       await new Promise(r => setTimeout(r, 450));
-      scannerLuckyAnimationOverlay.classList.add('hidden');
-      modalQrScanner.classList.add('hidden');
+      modalLuckyRoll.classList.add('hidden');
 
       // Refresh background table & stats
-      fetchAndRenderBusinessDay();
+      await fetchAndRenderBusinessDay();
 
       // Open the dedicated screenshot-ready Lucky Result popup!
-      await openLuckyResultModal(checkInResult.data, true);
+      await openLuckyResultModal(resultUser, isFromScanner);
     } catch (err) {
       clearInterval(rollTimer);
-      scannerLuckyAnimationOverlay.classList.add('hidden');
+      modalLuckyRoll.classList.add('hidden');
       console.error('Lỗi check-in:', err);
       showAdminAlert('Lỗi điểm danh', err.message);
     } finally {
@@ -2421,9 +2425,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   // 4. Camera Scanner Controller
   async function startCameraScanner() {
     modalQrScanner.classList.remove('hidden');
-    scannerCameraBody.classList.remove('hidden');
-    scannerResultCard.classList.add('hidden');
-    scannerLuckyAnimationOverlay.classList.add('hidden');
     scannerCameraStatus.textContent = 'Đang khởi động camera...';
 
     if (!html5QrScannerInstance) {
@@ -2438,22 +2439,14 @@ document.addEventListener('DOMContentLoaded', async () => {
         async (decodedText) => {
           if (isProcessingCheckIn) return;
           console.log('Đã quét mã QR:', decodedText);
-          // Pause camera scanning during check-in
-          try {
-            await html5QrScannerInstance.stop();
-            isCameraScanning = false;
-          } catch (e) {}
-
           const attendee = attendanceUsersCache.find(u =>
             u.qr_code_data === decodedText ||
             (u.employee_code && u.employee_code.toLowerCase() === decodedText.trim().toLowerCase())
           ) || { full_name: 'Người tham dự' };
 
-          await triggerLuckyDrawAndCheckIn(attendee, () => db.adminCheckInQR(decodedText));
+          await triggerLuckyDrawAndCheckIn(attendee, () => db.adminCheckInQR(decodedText), true);
         },
-        () => {
-          // ignore scan frame errors
-        }
+        () => {}
       );
       scannerCameraStatus.textContent = 'Camera đang hoạt động. Đưa mã QR vào khung hình.';
     } catch (err) {
@@ -2471,8 +2464,6 @@ document.addEventListener('DOMContentLoaded', async () => {
       isCameraScanning = false;
     }
     modalQrScanner.classList.add('hidden');
-    scannerResultCard.classList.add('hidden');
-    scannerLuckyAnimationOverlay.classList.add('hidden');
   }
 
   if (btnScannerSwitchCam) {
