@@ -226,6 +226,54 @@
             </button>
           </div>
 
+          <!-- SPEED MULTIPLIER TOGGLE CARD -->
+          <div class="bg-gradient-to-r from-amber-50/80 via-orange-50/50 to-amber-50/80 border border-amber-200 rounded-2xl p-4.5 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 shadow-xs">
+            <div class="flex items-start gap-3.5">
+              <div class="w-11 h-11 rounded-2xl bg-amber-500/15 text-amber-700 flex items-center justify-center text-2xl shrink-0 shadow-xs border border-amber-200/60">
+                ⚡
+              </div>
+              <div class="space-y-1">
+                <div class="flex flex-wrap items-center gap-2">
+                  <h3 class="text-sm font-black text-slate-900 font-['Space_Grotesk']">Hệ Số Điểm Trả Lời Nhanh & Đúng (Speed Bonus)</h3>
+                  <span id="speed_multiplier_status_badge" class="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-slate-200 text-slate-600 transition">
+                    ⚪ ĐANG TẮT
+                  </span>
+                </div>
+                <p class="text-xs text-slate-600 leading-relaxed">
+                  Bật công tắc này để hệ thống bắt đầu nhân hệ số điểm thưởng theo tốc độ. Khi chưa bật, hệ thống tính điểm chuẩn (+10đ / câu).
+                </p>
+                <!-- Mini rules pills table -->
+                <div class="flex flex-wrap gap-1.5 pt-1 text-[11px] font-medium">
+                  <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-emerald-100 text-emerald-800 font-bold">
+                    ✓ Đúng thần tốc (≤15s): <b class="font-mono text-emerald-900">+15đ</b>
+                  </span>
+                  <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-teal-100 text-teal-800 font-bold">
+                    ✓ Đúng nhanh (16-30s): <b class="font-mono text-teal-900">+12đ</b>
+                  </span>
+                  <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-slate-100 text-slate-700 font-bold">
+                    ✓ Đúng thường (31-60s): <b class="font-mono text-slate-900">+10đ</b>
+                  </span>
+                  <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-rose-100 text-rose-800 font-bold">
+                    ✗ Sai (≤60s): <b class="font-mono text-rose-900">-10đ</b>
+                  </span>
+                  <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-slate-100 text-slate-500 font-bold">
+                    ⌛ Hết giờ: <b class="font-mono text-slate-700">0đ</b>
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Toggle Switch Container -->
+            <div class="flex items-center gap-3 shrink-0 self-end lg:self-center bg-white/80 border border-amber-200/80 px-3.5 py-2 rounded-xl shadow-2xs">
+              <span id="toggle_speed_label" class="text-xs font-black text-slate-600">Hệ số:</span>
+              <label class="relative inline-flex items-center cursor-pointer">
+                <input type="checkbox" id="toggle_speed_multiplier" class="sr-only peer" />
+                <div class="w-12 h-6.5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5.5 after:w-5.5 after:transition-all peer-checked:bg-emerald-600 shadow-inner"></div>
+              </label>
+              <span id="toggle_speed_state_text" class="text-xs font-black text-slate-400 min-w-[36px]">Tắt</span>
+            </div>
+          </div>
+
           <!-- Filter Bar for Quizzes -->
           <div class="flex items-center gap-4 bg-slate-50 p-4 rounded-2xl border border-slate-100 mb-2">
             <div class="flex items-center gap-2">
@@ -572,7 +620,7 @@
               <p class="text-[11px] font-bold text-emerald-700 uppercase tracking-wider">Đã Điểm Danh</p>
               <div class="flex items-baseline justify-between mt-2">
                 <p id="bd_stat_attended" class="text-2xl font-black text-emerald-600 font-['Space_Grotesk']">0</p>
-                <span id="bd_stat_percent" class="text-xs font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full">0%</span>
+                <span id="bd_stat_percent" class="text-xs font-bold text-emerald-700 bg-emerald-100 px-2.5 py-0.5 rounded-full">người</span>
               </div>
             </div>
             <div class="bg-amber-50/60 border border-amber-100 rounded-2xl p-4 flex flex-col justify-between">

@@ -66,7 +66,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   
   let totalTimeSpent = 0;
   let wrongAnswersDetails = [];
-  
+  let isSpeedMultiplierEnabled = false;
+
   // Timer state
   let timerInterval = null;
   let currentRemainingTime = 0;
@@ -74,7 +75,12 @@ document.addEventListener('DOMContentLoaded', async () => {
   const countdownTimer = document.getElementById('countdown_timer');
 
   // Active quiz metadata elements
-  const activeQuiz = await db.getActiveQuiz();
+  const [activeQuiz, speedMultiplierSetting] = await Promise.all([
+    db.getActiveQuiz(),
+    db.getSpeedMultiplierSetting().catch(() => false)
+  ]);
+  isSpeedMultiplierEnabled = !!speedMultiplierSetting;
+
   if (activeQuiz && quizWeekBadge) {
     quizWeekBadge.textContent = `Tháng ${activeQuiz.month_no || 1} • Tuần ${activeQuiz.week_no || 'Này'}`;
   }
@@ -209,27 +215,38 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     const currentQuestion = questions[currentIndex];
     const basePoint = currentQuestion.point || 10;
+    const timeSpent = Math.max(0, currentMaxTime - currentRemainingTime);
+    totalTimeSpent += timeSpent;
 
     if (isCorrect) {
       // Correct flow
       correctCount += 1;
       
-      // Speed Bonus Logic (Tạm thời vô hiệu hóa theo yêu cầu)
+      let pointsEarned = basePoint;
       let bonusEarned = 0;
-      const timeSpent = currentMaxTime - currentRemainingTime;
-      totalTimeSpent += (timeSpent > 0 ? timeSpent : 0);
+      let speedTierLabel = '';
 
-      /* 
-      if (timeSpent <= currentMaxTime / 3) {
-        bonusEarned = Math.round(basePoint * 0.5); // Tier 1 (50%)
-      } else if (timeSpent <= (currentMaxTime * 2) / 3) {
-        bonusEarned = Math.round(basePoint * 0.2); // Tier 2 (20%)
-      } else {
-        bonusEarned = Math.round(basePoint * 0.1); // Tier 3 (10%)
+      if (isSpeedMultiplierEnabled) {
+        // Quy chuẩn bảng điểm tốc độ (Speed Multiplier):
+        // 1. Đúng thần tốc: ≤ 15s -> +15đ (10đ gốc + 5đ thưởng)
+        // 2. Đúng nhanh: 16 - 30s -> +12đ (10đ gốc + 2đ thưởng)
+        // 3. Đúng bình thường: 31 - 60s -> +10đ (10đ gốc + 0đ thưởng)
+        if (timeSpent <= 15) {
+          pointsEarned = 15;
+          bonusEarned = 5;
+          speedTierLabel = 'Đúng thần tốc ⚡';
+        } else if (timeSpent <= 30) {
+          pointsEarned = 12;
+          bonusEarned = 2;
+          speedTierLabel = 'Đúng nhanh 🚀';
+        } else {
+          pointsEarned = 10;
+          bonusEarned = 0;
+          speedTierLabel = 'Đúng bình thường ✅';
+        }
       }
-      */
 
-      currentScore += basePoint;
+      currentScore += pointsEarned;
       bonusScore += bonusEarned;
       
       // Update score display immediately for microfeedback
@@ -249,12 +266,14 @@ document.addEventListener('DOMContentLoaded', async () => {
       feedbackIcon.className = "w-10 h-10 rounded-2xl bg-white text-emerald-600 flex items-center justify-center font-black text-xl";
       feedbackIcon.textContent = "✓";
       feedbackTitle.textContent = "CHÍNH XÁC! 🎉";
-      feedbackSub.textContent = `+${basePoint} Điểm${bonusEarned > 0 ? ` (+${bonusEarned}đ Thưởng Tốc Độ)` : ''}`;
+      if (isSpeedMultiplierEnabled && speedTierLabel) {
+        feedbackSub.textContent = `+${pointsEarned} Điểm (${speedTierLabel})`;
+      } else {
+        feedbackSub.textContent = `+${basePoint} Điểm công ty`;
+      }
     } else {
-      // Incorrect flow
+      // Incorrect or Timeout flow
       let selectedText = "";
-      const timeSpent = currentMaxTime - currentRemainingTime;
-      totalTimeSpent += (timeSpent > 0 ? timeSpent : 0);
 
       if (selectedButton) {
         selectedButton.classList.add('ring-4', 'ring-rose-400');
@@ -265,9 +284,27 @@ document.addEventListener('DOMContentLoaded', async () => {
             selectedText = optButtons[key].label.textContent;
           }
         });
+
+        if (isSpeedMultiplierEnabled) {
+          // Bảng quy chuẩn hệ số nhân điểm:
+          // 4. Sai thần tốc (≤ 15s): -10đ
+          // 5. Sai (16 - 60s): -10đ
+          const pointsDeducted = 10;
+          currentScore -= pointsDeducted;
+          scoreDisplay.textContent = currentScore;
+          const speedTier = timeSpent <= 15 ? 'Sai thần tốc' : 'Sai';
+          feedbackSub.textContent = `-10 Điểm (${speedTier}) ⚠️`;
+        } else {
+          feedbackSub.textContent = "Cố gắng câu sau nhé!";
+        }
       } else {
         feedbackTitle.textContent = "HẾT GIỜ! ⏰";
         selectedText = "Không trả lời";
+        if (isSpeedMultiplierEnabled) {
+          feedbackSub.textContent = "0 Điểm (Hết thời gian)";
+        } else {
+          feedbackSub.textContent = "Cố gắng câu sau nhé!";
+        }
       }
 
       let correctText = "";
@@ -287,7 +324,6 @@ document.addEventListener('DOMContentLoaded', async () => {
       feedbackBanner.className = "mb-6 p-4 rounded-3xl bg-rose-600 text-white flex items-center justify-between shadow-lg animate-shake";
       feedbackIcon.className = "w-10 h-10 rounded-2xl bg-white text-rose-600 flex items-center justify-center font-black text-xl animate-bounce";
       feedbackIcon.textContent = "✗";
-      feedbackSub.textContent = "Cố gắng câu sau nhé!";
     }
 
     // Highlight the correct answer vividly and turn all incorrect answers gray
@@ -319,14 +355,13 @@ document.addEventListener('DOMContentLoaded', async () => {
       btnNextQuestion.disabled = true;
       btnNextQuestion.textContent = "ĐANG LƯU...";
 
-      // If quiz finished, score is currentScore (max 100)
       const earnedBonus = bonusScore;
       const totalQuizScore = currentScore;
 
       try {
         // Save results to Database
         const wrongCount = questions.length - correctCount;
-        await db.savePlayRecord(user.id, quizId, totalQuizScore + earnedBonus, correctCount, wrongCount, totalTimeSpent, wrongAnswersDetails);
+        await db.savePlayRecord(user.id, quizId, totalQuizScore, correctCount, wrongCount, totalTimeSpent, wrongAnswersDetails);
 
         // Save session items so results page can display them elegantly
         sessionStorage.setItem('last_quiz_score', totalQuizScore);

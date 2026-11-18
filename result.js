@@ -43,6 +43,15 @@ document.addEventListener('DOMContentLoaded', async () => {
   if (correctCounter) correctCounter.textContent = `${correct}/${total}`;
   if (bonusBadge) bonusBadge.textContent = `+${bonus}đ`;
 
+  const boxSpeedBonus = document.getElementById('box_speed_bonus');
+  const resultStatsGrid = document.getElementById('result_stats_grid');
+  if (bonus > 0 && boxSpeedBonus) {
+    boxSpeedBonus.classList.remove('hidden');
+    if (resultStatsGrid) {
+      resultStatsGrid.className = 'grid grid-cols-2 gap-4 mt-6 pt-5 border-t border-white/5';
+    }
+  }
+
   // Fetch và hiển thị tổng điểm tích lũy mới nhất từ DB và Hạng
   if (totalScoreDisplay) {
     try {

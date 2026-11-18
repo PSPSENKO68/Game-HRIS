@@ -198,12 +198,18 @@ document.addEventListener('DOMContentLoaded', async () => {
       tab.btn.style.color = '#E07242';
       if (tab.section) tab.section.classList.remove('hidden');
       if (tab.btn === tabUsersBtn) fetchAndRenderUsers();
-      if (tab.btn === tabQuizzesBtn) fetchAndRenderQuizzes();
+      if (tab.btn === tabQuizzesBtn) {
+        fetchAndRenderQuizzes();
+        initSpeedMultiplierSetting();
+      }
       if (tab.btn === tabHistoryBtn) fetchAndRenderHistory();
       if (tab.btn === tabFlashcardsBtn) fetchAndRenderFlashcardSets();
       if (tab.btn === tabBusinessDayBtn) fetchAndRenderBusinessDay();
     });
   });
+
+  // Khởi tạo trạng thái Hệ số điểm tốc độ khi nạp Admin
+  initSpeedMultiplierSetting();
 
   // ── 1. USERS MANAGEMENT ──────────────────────────────────────────────────────
   function updateBulkSelectionUI() {
@@ -459,6 +465,70 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
         modalUser.classList.add('hidden');
         fetchAndRenderUsers();
+      }
+    });
+  }
+
+  // ── SPEED MULTIPLIER (HỆ SỐ ĐIỂM TỐC ĐỘ) ──────────────────────────────────
+  const toggleSpeedMultiplier = document.getElementById('toggle_speed_multiplier');
+  const speedMultiplierStatusBadge = document.getElementById('speed_multiplier_status_badge');
+  const toggleSpeedStateText = document.getElementById('toggle_speed_state_text');
+
+  async function initSpeedMultiplierSetting() {
+    if (!toggleSpeedMultiplier) return;
+    try {
+      const isEnabled = await db.getSpeedMultiplierSetting();
+      updateSpeedMultiplierUI(isEnabled);
+    } catch (e) {
+      console.error('Lỗi nạp cài đặt hệ số tốc độ:', e);
+    }
+  }
+
+  function updateSpeedMultiplierUI(isEnabled) {
+    if (toggleSpeedMultiplier) toggleSpeedMultiplier.checked = isEnabled;
+    if (speedMultiplierStatusBadge) {
+      if (isEnabled) {
+        speedMultiplierStatusBadge.className = 'px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-100 text-emerald-800 border border-emerald-300 animate-pulse';
+        speedMultiplierStatusBadge.textContent = '🟢 ĐANG BẬT';
+      } else {
+        speedMultiplierStatusBadge.className = 'px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-slate-200 text-slate-600';
+        speedMultiplierStatusBadge.textContent = '⚪ ĐANG TẮT';
+      }
+    }
+    if (toggleSpeedStateText) {
+      toggleSpeedStateText.textContent = isEnabled ? 'Bật' : 'Tắt';
+      toggleSpeedStateText.className = isEnabled ? 'text-xs font-black text-emerald-600 min-w-[36px]' : 'text-xs font-black text-slate-400 min-w-[36px]';
+    }
+  }
+
+  if (toggleSpeedMultiplier) {
+    toggleSpeedMultiplier.addEventListener('change', async () => {
+      const isChecked = toggleSpeedMultiplier.checked;
+      updateSpeedMultiplierUI(isChecked);
+      const res = await db.setSpeedMultiplierSetting(isChecked);
+      if (res.success) {
+        if (isChecked) {
+          showAdminAlert(
+            'Đã BẬT Hệ Số Điểm Tốc Độ ⚡',
+            'Từ bây giờ, hệ thống sẽ áp dụng nhân hệ số điểm theo tốc độ trả lời:\n\n' +
+            '• Đúng thần tốc (≤15s): +15 điểm\n' +
+            '• Đúng nhanh (16-30s): +12 điểm\n' +
+            '• Đúng bình thường (31-60s): +10 điểm\n' +
+            '• Sai (≤60s): -10 điểm\n' +
+            '• Hết giờ: 0 điểm'
+          );
+        } else {
+          showAdminAlert(
+            'Đã TẮT Hệ Số Điểm Tốc Độ ⚪',
+            'Hệ thống đã chuyển về chế độ tính điểm chuẩn:\n\n' +
+            '• Đúng: +10 điểm\n' +
+            '• Sai: 0 điểm\n' +
+            '• Hết giờ: 0 điểm'
+          );
+        }
+      } else {
+        updateSpeedMultiplierUI(!isChecked);
+        showAdminAlert('Lỗi cập nhật', res.message || 'Không thể lưu trạng thái.');
       }
     });
   }
@@ -1209,7 +1279,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   async function renderDashboard(historyData, quizId, container) {
     container.innerHTML = '<p class="text-center text-slate-400 text-xs py-4">Đang tính toán thống kê...</p>';
-    
+
     const questions = await db.adminGetQuestions(quizId);
     if (!questions || questions.length === 0) {
       container.innerHTML = '<p class="text-center text-rose-500 text-xs py-4">Không tìm thấy dữ liệu câu hỏi cho đề thi này.</p>';
@@ -1218,7 +1288,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     const totalPlays = historyData.length;
     let totalTime = 0;
-    
+
     // Khởi tạo map đếm lỗi
     const wrongCountsByQuestion = {};
     questions.forEach(q => {
@@ -1793,7 +1863,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       gain.connect(ctx.destination);
       osc.start(ctx.currentTime);
       osc.stop(ctx.currentTime + 0.05);
-    } catch (e) {}
+    } catch (e) { }
   }
 
   function playWinFanfare() {
@@ -1813,7 +1883,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         osc.start(ctx.currentTime + idx * 0.1);
         osc.stop(ctx.currentTime + idx * 0.1 + 0.4);
       });
-    } catch (e) {}
+    } catch (e) { }
   }
 
   // 1. Fetch & Render Table + Stats
@@ -1841,9 +1911,9 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (stats) {
         if (bdStatTotal) bdStatTotal.textContent = stats.total;
         if (bdStatAttended) bdStatAttended.textContent = stats.attended;
-        if (bdStatPercent) bdStatPercent.textContent = stats.percent + '%';
+        if (bdStatPercent) bdStatPercent.textContent = 'người';
         if (bdStatUnattended) bdStatUnattended.textContent = stats.unattended;
-        if (bdStatLuckyIssued) bdStatLuckyIssued.textContent = stats.luckyIssued;
+        if (bdStatLuckyIssued) bdStatLuckyIssued.textContent = stats.luckyIssued ?? stats.attended;
       }
 
       populateFilterDropdowns(attendanceUsersCache);
@@ -2446,7 +2516,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
           await triggerLuckyDrawAndCheckIn(attendee, () => db.adminCheckInQR(decodedText), true);
         },
-        () => {}
+        () => { }
       );
       scannerCameraStatus.textContent = 'Camera đang hoạt động. Đưa mã QR vào khung hình.';
     } catch (err) {
@@ -2460,7 +2530,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (html5QrScannerInstance && isCameraScanning) {
       try {
         await html5QrScannerInstance.stop();
-      } catch (e) {}
+      } catch (e) { }
       isCameraScanning = false;
     }
     modalQrScanner.classList.add('hidden');
@@ -2472,7 +2542,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (html5QrScannerInstance && isCameraScanning) {
         try {
           await html5QrScannerInstance.stop();
-        } catch (e) {}
+        } catch (e) { }
         isCameraScanning = false;
         await startCameraScanner();
       }
@@ -2489,7 +2559,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         try {
           await html5QrScannerInstance.stop();
           isCameraScanning = false;
-        } catch (e) {}
+        } catch (e) { }
       }
 
       const attendee = attendanceUsersCache.find(u =>

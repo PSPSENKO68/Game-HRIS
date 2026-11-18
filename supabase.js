@@ -368,9 +368,34 @@ export const db = {
       .single();
 
     const currentTotal = parseInt(userData?.total_score) || 0;
-    const newTotal = currentTotal + (parseInt(score) || 0);
+    const newTotal = Math.max(0, currentTotal + (parseInt(score) || 0));
     await supabase.from('users').update({ total_score: newTotal }).eq('id', userId);
 
+    return { success: true };
+  },
+
+  // ── 4B. HỆ SỐ ĐIỂM TỐC ĐỘ (SPEED MULTIPLIER TOGGLE) ─────────────────────
+  async getSpeedMultiplierSetting() {
+    const { data, error } = await supabase
+      .from('settings')
+      .select('value')
+      .eq('key', 'speed_multiplier_enabled')
+      .limit(1);
+
+    if (!error && data && data.length > 0) {
+      return data[0].value === 'true';
+    }
+    return false; // Mặc định TẮT
+  },
+
+  async setSpeedMultiplierSetting(enabled) {
+    const { error } = await supabase
+      .from('settings')
+      .upsert({
+        key: 'speed_multiplier_enabled',
+        value: enabled ? 'true' : 'false'
+      });
+    if (error) return { success: false, message: error.message };
     return { success: true };
   },
 
@@ -509,7 +534,7 @@ export const db = {
     return { success: true };
   },
 
-async adminDeleteUser(id) {
+  async adminDeleteUser(id) {
     const { error } = await supabase.from('users').delete().eq('id', id);
     if (error) return { success: false, message: error.message };
     return { success: true };
@@ -1172,16 +1197,17 @@ async adminDeleteUser(id) {
   async adminGetAttendanceStats() {
     const { data, error } = await supabase
       .from('attendance_users')
-      .select('is_attended, department, division');
+      .select('is_attended, lucky_number, department, division');
 
     if (error || !data) {
-      return { total: 0, attended: 0, unattended: 0, attendedPct: 0, departments: [], divisions: [] };
+      return { total: 0, attended: 0, unattended: 0, percent: 0, attendedPct: 0, luckyIssued: 0, departments: [], divisions: [] };
     }
 
     const total = data.length;
     const attended = data.filter(u => u.is_attended).length;
     const unattended = total - attended;
     const attendedPct = total > 0 ? Math.round((attended / total) * 100) : 0;
+    const luckyIssued = data.filter(u => u.lucky_number !== null && u.lucky_number !== undefined).length;
 
     const deptSet = new Set();
     const divSet = new Set();
@@ -1194,7 +1220,9 @@ async adminDeleteUser(id) {
       total,
       attended,
       unattended,
+      percent: attendedPct,
       attendedPct,
+      luckyIssued,
       departments: Array.from(deptSet).sort(),
       divisions: Array.from(divSet).sort()
     };
@@ -1474,7 +1502,7 @@ async adminDeleteUser(id) {
     if (data && data.length > 0 && data[0].value) {
       try {
         return JSON.parse(data[0].value);
-      } catch (e) {}
+      } catch (e) { }
     }
 
     return {
