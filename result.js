@@ -39,18 +39,11 @@ document.addEventListener('DOMContentLoaded', async () => {
   const totalScoreDisplay = document.getElementById('total_score_display');
 
   // Populate UI elements
-  if (scoreEarned) scoreEarned.textContent = score;
-  if (correctCounter) correctCounter.textContent = `${correct}/${total}`;
-  if (bonusBadge) bonusBadge.textContent = `+${bonus}đ`;
-
-  const boxSpeedBonus = document.getElementById('box_speed_bonus');
-  const resultStatsGrid = document.getElementById('result_stats_grid');
-  if (bonus > 0 && boxSpeedBonus) {
-    boxSpeedBonus.classList.remove('hidden');
-    if (resultStatsGrid) {
-      resultStatsGrid.className = 'grid grid-cols-2 gap-4 mt-6 pt-5 border-t border-white/5';
-    }
+  if (scoreEarned) {
+    if (score > 0) scoreEarned.textContent = `+${score}`;
+    else scoreEarned.textContent = `${score}`;
   }
+  if (correctCounter) correctCounter.textContent = `${correct}/${total}`;
 
   // Fetch và hiển thị tổng điểm tích lũy mới nhất từ DB và Hạng
   if (totalScoreDisplay) {
@@ -82,7 +75,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   if (userFeedbackMsg) {
     let comment = '';
     if (correct === total) {
-      comment = `Tuyệt đỉnh! Bạn trả lời đúng tuyệt đối ${correct}/${total} câu hỏi! Tặng bạn ${bonus} điểm thưởng hoàn thành! 🏆`;
+      comment = `Tuyệt đỉnh! Bạn trả lời đúng tuyệt đối ${correct}/${total} câu hỏi! 🏆`;
     } else if (correct >= 8) {
       comment = `Rất Xuất Sắc! Đúng ${correct}/${total} câu hỏi chính sách bảo mật & văn hóa doanh nghiệp. Tiếp tục phát huy nhé! 🎉`;
     } else if (correct >= 5) {
